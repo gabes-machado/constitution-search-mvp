@@ -53,7 +53,7 @@ export class AppController {
     this._logger.log('GET /constitution/test-parse endpoint hit.');
     try {
       const parsedData = await this._appService.testConstitutionParsing();
-      const sample = parsedData.slice(0, 5);
+      const sample = parsedData;
       return {
         message: 'Constitution parsing dry run completed.',
         itemCount: parsedData.length,

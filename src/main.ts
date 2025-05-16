@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'; // Import Swagger modules
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,33 +13,33 @@ async function bootstrap() {
   const port = configService.get<number>('API_PORT', 3000);
   const apiBasePath = '/api'; // Define a base path for your API, also used for Swagger
 
-  app.setGlobalPrefix(apiBasePath); // Optional: Set a global prefix for all routes
-
+  app.setGlobalPrefix(apiBasePath);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableCors();
 
-  // Swagger (OpenAPI) Documentation Setup
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Constitution Search MVP API')
     .setDescription('API for scraping and testing the Brazilian Constitution.')
     .setVersion('1.0')
-    .addTag('constitution', 'Endpoints related to the Brazilian Constitution') // Tag for your controller
+    .addTag('constitution', 'Endpoints related to the Brazilian Constitution')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  // The path for Swagger UI, e.g., http://localhost:3001/api/docs
   SwaggerModule.setup(`${apiBasePath}/docs`, app, document, {
     customSiteTitle: 'Constitution Search API Docs',
     swaggerOptions: {
-      persistAuthorization: true, // If you add auth later
-      // docExpansion: 'none', // 'list' or 'full'
+      persistAuthorization: true,
     },
   });
 
-  logger.log(`Swagger UI available at ${await app.getUrl()}${apiBasePath}/docs`);
-
+  // Start listening for requests FIRST
   await app.listen(port);
-  logger.log(`Application is running on: ${await app.getUrl()}`);
+
+  // Now that the app is listening, getUrl() will work
+  const appUrl = await app.getUrl();
+  logger.log(`Application is running on: ${appUrl}`);
+  logger.log(`Swagger UI available at ${appUrl}${apiBasePath}/docs`); // Corrected logging order
+
 }
 
 bootstrap().catch(err => {
