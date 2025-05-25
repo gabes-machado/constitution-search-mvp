@@ -39,10 +39,9 @@ async function bootstrap() {
   const appUrl = await app.getUrl();
   logger.log(`Application is running on: ${appUrl}`);
   logger.log(`Swagger UI available at ${appUrl}${apiBasePath}/docs`); // Corrected logging order
-
 }
 
-bootstrap().catch(err => {
+bootstrap().catch((err) => {
   console.error('[Bootstrap] Unhandled error during bootstrap:', err);
   process.exit(1);
 });

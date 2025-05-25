@@ -4,9 +4,24 @@
  * an inciso, an alínea, or a paragraph.
  */
 export interface RawConstitutionDataItem {
-  elementType: 'TÍTULO' | 'CAPÍTULO' | 'SEÇÃO' | 'SUBSEÇÃO' | 'Artigo' | 'Parágrafo' | 'Inciso' | 'Alínea' | 'EMENDA CONSTITUCIONAL' | 'ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS' | 'PREÂMBULO' | 'TEXTO_CONSTITUCIONAL_PROMULGADO' | 'ASSINATURA' | 'LOCAL_DATA';
+  elementType:
+    | 'TÍTULO'
+    | 'CAPÍTULO'
+    | 'SEÇÃO'
+    | 'SUBSEÇÃO'
+    | 'Artigo'
+    | 'Parágrafo'
+    | 'Inciso'
+    | 'Alínea'
+    | 'EMENDA CONSTITUCIONAL'
+    | 'ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS'
+    | 'PREÂMBULO'
+    | 'TEXTO_CONSTITUCIONAL_PROMULGADO'
+    | 'ASSINATURA'
+    | 'LOCAL_DATA';
   text: string;
-  hierarchicalContext: { // Contextual information from parent elements
+  hierarchicalContext: {
+    // Contextual information from parent elements
     title?: string;
     chapter?: string;
     section?: string;
@@ -24,7 +39,18 @@ export interface RawConstitutionDataItem {
  */
 export interface ConstitutionIndexSchema {
   id: string; // Unique ID for Typesense document (e.g., "const-art-5-inc-X")
-  type: 'Preâmbulo' | 'Artigo' | 'Parágrafo' | 'Inciso' | 'Alínea' | 'Título' | 'Capítulo' | 'Seção' | 'Subseção' | 'ADCTArtigo' | 'EmendaConstitucional'; // Type of the constitutional element
+  type:
+    | 'Preâmbulo'
+    | 'Artigo'
+    | 'Parágrafo'
+    | 'Inciso'
+    | 'Alínea'
+    | 'Título'
+    | 'Capítulo'
+    | 'Seção'
+    | 'Subseção'
+    | 'ADCTArtigo'
+    | 'EmendaConstitucional'; // Type of the constitutional element
   number?: string; // Specific number (e.g., "5º", "I", "a)", "§ 1º", "1")
   fullReference?: string; // Full reference like "Art. 5º, Inciso I, Alínea a"
   text: string; // The actual text content of the element

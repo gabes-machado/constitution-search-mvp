@@ -8,13 +8,13 @@ import { TypesenseModule } from './typesense/typesense.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, 
+      isGlobal: true,
       envFilePath: '.env',
     }),
     TypesenseModule,
     ConstitutionModule,
   ],
   controllers: [AppController],
-  providers: [AppService],    
+  providers: [AppService],
 })
 export class AppModule {}

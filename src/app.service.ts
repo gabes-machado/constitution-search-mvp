@@ -14,8 +14,13 @@ export class AppService {
    * Triggers the full scraping and indexing process for the Constitution.
    * @returns A success message or throws an error.
    */
-  async triggerConstitutionScrapingAndIndexing(): Promise<{ message: string; itemsProcessed?: number }> {
-    this._logger.log('Received request to trigger constitution scraping and indexing.');
+  async triggerConstitutionScrapingAndIndexing(): Promise<{
+    message: string;
+    itemsProcessed?: number;
+  }> {
+    this._logger.log(
+      'Received request to trigger constitution scraping and indexing.',
+    );
     try {
       // The processConstitution method in ConstitutionScrapingService handles logging.
       // We might want to get a count of items processed if the method returns it.
@@ -23,10 +28,18 @@ export class AppService {
       // If processConstitution could return a count:
       // const result = await this._constitutionScraper.processConstitution();
       // return { message: 'Constitution scraping and indexing process initiated successfully.', itemsProcessed: result.count };
-      return { message: 'Constitution scraping and indexing process initiated successfully. Check logs for details.' };
+      return {
+        message:
+          'Constitution scraping and indexing process initiated successfully. Check logs for details.',
+      };
     } catch (error: any) {
-      this._logger.error('Error during constitution scraping and indexing trigger.', error.stack);
-      throw new Error(`Failed to trigger constitution scraping: ${error.message}`);
+      this._logger.error(
+        'Error during constitution scraping and indexing trigger.',
+        error.stack,
+      );
+      throw new Error(
+        `Failed to trigger constitution scraping: ${error.message}`,
+      );
     }
   }
 
@@ -35,19 +48,32 @@ export class AppService {
    * @returns The raw parsed data.
    */
   async testConstitutionParsing(): Promise<RawConstitutionDataItem[]> {
-    this._logger.log('Received request to test constitution parsing (dry run).');
+    this._logger.log(
+      'Received request to test constitution parsing (dry run).',
+    );
     try {
       // Temporarily expose protected methods for testing via this service method
       // In a real scenario, you might refactor ConstitutionScrapingService
       // to make fetching and parsing more publicly testable if needed,
       // or use a more formal testing approach (unit/integration tests).
-      const html = await (this._constitutionScraper as any)._fetchConstitutionHtml();
-      const parsedData = (this._constitutionScraper as any)._parseConstitutionHtml(html);
-      this._logger.log(`Dry run parsing complete. Found ${parsedData.length} raw items.`);
+      const html = await (
+        this._constitutionScraper as any
+      )._fetchConstitutionHtml();
+      const parsedData = (
+        this._constitutionScraper as any
+      )._parseConstitutionHtml(html);
+      this._logger.log(
+        `Dry run parsing complete. Found ${parsedData.length} raw items.`,
+      );
       return parsedData;
     } catch (error: any) {
-      this._logger.error('Error during constitution parsing dry run.', error.stack);
-      throw new Error(`Failed during constitution parsing dry run: ${error.message}`);
+      this._logger.error(
+        'Error during constitution parsing dry run.',
+        error.stack,
+      );
+      throw new Error(
+        `Failed during constitution parsing dry run: ${error.message}`,
+      );
     }
   }
 

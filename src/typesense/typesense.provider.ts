@@ -17,7 +17,9 @@ export const typesenseClientProvider: Provider = {
     const apiKey = configService.get<string>('TYPESENSE_API_KEY');
 
     if (!host || !port || !protocol || !apiKey) {
-      throw new Error('Typesense configuration is incomplete. Ensure TYPESENSE_HOST, TYPESENSE_PORT, TYPESENSE_PROTOCOL, and TYPESENSE_API_KEY are set.');
+      throw new Error(
+        'Typesense configuration is incomplete. Ensure TYPESENSE_HOST, TYPESENSE_PORT, TYPESENSE_PROTOCOL, and TYPESENSE_API_KEY are set.',
+      );
     }
 
     return new Typesense.Client({
@@ -29,7 +31,10 @@ export const typesenseClientProvider: Provider = {
         },
       ],
       apiKey,
-      connectionTimeoutSeconds: configService.get<number>('TYPESENSE_TIMEOUT_SECONDS', 5), // Added a configurable timeout
+      connectionTimeoutSeconds: configService.get<number>(
+        'TYPESENSE_TIMEOUT_SECONDS',
+        5,
+      ), // Added a configurable timeout
       numRetries: configService.get<number>('TYPESENSE_NUM_RETRIES', 3), // Added configurable retries
     });
   },
