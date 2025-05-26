@@ -1,4 +1,3 @@
-// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
@@ -11,7 +10,7 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   const port = configService.get<number>('API_PORT', 3000);
-  const apiBasePath = '/api'; // Define a base path for your API, also used for Swagger
+  const apiBasePath = '/api';
 
   app.setGlobalPrefix(apiBasePath);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -32,13 +31,12 @@ async function bootstrap() {
     },
   });
 
-  // Start listening for requests FIRST
+  // Start listening for requests
   await app.listen(port);
 
-  // Now that the app is listening, getUrl() will work
   const appUrl = await app.getUrl();
   logger.log(`Application is running on: ${appUrl}`);
-  logger.log(`Swagger UI available at ${appUrl}${apiBasePath}/docs`); // Corrected logging order
+  logger.log(`Swagger UI available at ${appUrl}${apiBasePath}/docs`);
 }
 
 bootstrap().catch((err) => {

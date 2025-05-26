@@ -9,7 +9,7 @@ import {
 import { TypesenseService } from '../typesense/typesense.service';
 import { CollectionCreateSchema } from 'typesense/lib/Typesense/Collections';
 
-export const CONSTITUTION_COLLECTION_NAME = 'brazilian_constitution_v1'; // Added versioning to collection name
+export const CONSTITUTION_COLLECTION_NAME = 'brazilian_constitution_v1';
 
 // Schema for the Typesense collection
 export const CONSTITUTION_TYPESENSE_SCHEMA: CollectionCreateSchema = {
@@ -21,7 +21,6 @@ export const CONSTITUTION_TYPESENSE_SCHEMA: CollectionCreateSchema = {
     {
       name: 'fullReference',
       type: 'string',
-      optional: true,
       infix: true,
       sort: true,
     },
@@ -51,10 +50,19 @@ export const CONSTITUTION_TYPESENSE_SCHEMA: CollectionCreateSchema = {
       facet: true,
       infix: true,
     },
+    {
+      name: 'embedding',
+      type: 'float[]',
+      embed: {
+        from: ['text', 'fullReference', 'hierarchicalTextContext'],
+        model_config: {
+          model_name: 'ts/all-MiniLM-L12-v2',
+        },
+      },
+    },
   ],
   default_sorting_field: 'fullReference', // Sort by full reference to maintain order
-  token_separators: [' ', '-', '.', ',', '/', '(', ')', 'º', '§', ':'],
-  symbols_to_index: ['§', 'º'],
+  token_separators: [' ', '-', '.', ',', '/', '(', ')', ':'],
 };
 
 @Injectable()
