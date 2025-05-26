@@ -1,9 +1,8 @@
-// src/typesense/typesense.service.ts
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Client } from 'typesense';
 import { CollectionCreateSchema } from 'typesense/lib/Typesense/Collections';
 import { CollectionSchema } from 'typesense/lib/Typesense/Collection';
-import { ObjectNotFound } from 'typesense/lib/Typesense/Errors'; // Import the specific error type
+import { ObjectNotFound } from 'typesense/lib/Typesense/Errors';
 import { TYPESENSE_CLIENT } from './typesense.provider';
 
 @Injectable()
@@ -13,6 +12,13 @@ export class TypesenseService {
   constructor(
     @Inject(TYPESENSE_CLIENT) private readonly _typesenseClient: Client,
   ) {}
+
+  /**
+   * Ensures that a collection exists in Typesense. If it does not exist, it creates the collection with the provided schema.
+   * @param name - The name of the collection to ensure.
+   * @param schema - The schema for the collection to create if it does not exist.
+   * @returns A promise that resolves when the collection is ensured to exist.
+   */
 
   async ensureCollectionExists(
     name: string,
@@ -55,6 +61,14 @@ export class TypesenseService {
       }
     }
   }
+
+  /**
+   * Indexes an array of documents into a specified Typesense collection in batches.
+   * @param collectionName - The name of the collection to index documents into.
+   * @param documents - An array of documents to index.
+   * @param batchSize - The number of documents to index in each batch. Defaults to 100.
+   * @returns A promise that resolves when all documents have been indexed.
+   */
 
   async indexDocuments<TDocument extends object>(
     collectionName: string,
@@ -115,7 +129,6 @@ export class TypesenseService {
       this._logger.log(`Collection "${collectionName}" deleted successfully.`);
     } catch (error: any) {
       if (error instanceof ObjectNotFound) {
-        // Using instanceof here too for consistency
         this._logger.log(
           `Collection "${collectionName}" does not exist. No action taken.`,
         );

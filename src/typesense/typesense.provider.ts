@@ -1,4 +1,3 @@
-// src/typesense/typesense.provider.ts
 import { Provider, Logger } from '@nestjs/common'; // Import Logger
 import Typesense from 'typesense';
 import { ConfigService } from '@nestjs/config';

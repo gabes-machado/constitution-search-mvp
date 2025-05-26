@@ -9,7 +9,7 @@ import {
 import { TypesenseService } from '../typesense/typesense.service';
 import { CollectionCreateSchema } from 'typesense/lib/Typesense/Collections';
 
-export const CONSTITUTION_COLLECTION_NAME = 'brazilian_constitution_v1'; // Added versioning to collection name
+export const CONSTITUTION_COLLECTION_NAME = 'brazilian_constitution_v1';
 
 // Schema for the Typesense collection
 export const CONSTITUTION_TYPESENSE_SCHEMA: CollectionCreateSchema = {
