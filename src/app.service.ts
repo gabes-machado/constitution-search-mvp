@@ -77,7 +77,6 @@ export class AppService {
     }
   }
 
-  // You can keep or remove the default getHello() method
   getHello(): string {
     return 'Constitution Search MVP API is running!';
   }

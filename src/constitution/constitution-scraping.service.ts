@@ -21,7 +21,6 @@ export const CONSTITUTION_TYPESENSE_SCHEMA: CollectionCreateSchema = {
     {
       name: 'fullReference',
       type: 'string',
-      optional: true,
       infix: true,
       sort: true,
     },
@@ -63,8 +62,7 @@ export const CONSTITUTION_TYPESENSE_SCHEMA: CollectionCreateSchema = {
     },
   ],
   default_sorting_field: 'fullReference', // Sort by full reference to maintain order
-  token_separators: [' ', '-', '.', ',', '/', '(', ')', 'º', '§', ':'],
-  symbols_to_index: ['§', 'º'],
+  token_separators: [' ', '-', '.', ',', '/', '(', ')', ':'],
 };
 
 @Injectable()
