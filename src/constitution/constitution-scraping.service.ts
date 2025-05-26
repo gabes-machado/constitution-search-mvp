@@ -51,6 +51,16 @@ export const CONSTITUTION_TYPESENSE_SCHEMA: CollectionCreateSchema = {
       facet: true,
       infix: true,
     },
+    {
+      name: 'embedding',
+      type: 'float[]',
+      embed: {
+        from: ['text', 'fullReference', 'hierarchicalTextContext'],
+        model_config: {
+          model_name: 'ts/all-MiniLM-L12-v2',
+        },
+      },
+    },
   ],
   default_sorting_field: 'fullReference', // Sort by full reference to maintain order
   token_separators: [' ', '-', '.', ',', '/', '(', ')', 'º', '§', ':'],
