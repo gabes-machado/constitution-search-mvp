@@ -1,4 +1,3 @@
-// src/app.controller.ts
 import {
   Controller,
   Get,
@@ -15,10 +14,10 @@ import {
   ApiResponse,
   ApiAcceptedResponse,
   ApiOkResponse,
-} from '@nestjs/swagger'; // Import Swagger decorators
+} from '@nestjs/swagger';
 
 @ApiTags('constitution') // Matches the tag in DocumentBuilder
-@Controller('constitution') // Path will be relative to global prefix, e.g., /api/constitution
+@Controller('constitution')
 export class AppController {
   private readonly _logger = new Logger(AppController.name);
 
@@ -65,8 +64,8 @@ export class AppController {
   @ApiOkResponse({
     description:
       'Dry run parsing completed. Returns item count and a sample of parsed data.',
-    // You might want to define a DTO for this response if it becomes complex
-    // For now, an example schema can be illustrative
+    // Might define a DTO for this response if it becomes complex
+    // Example schema
     schema: {
       example: {
         message: 'Constitution parsing dry run completed.',
