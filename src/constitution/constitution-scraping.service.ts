@@ -83,21 +83,27 @@ export class ConstitutionScrapingService {
   private async _fetchConstitutionHtml(): Promise<string> {
     this._logger.log(`Workspaceing HTML from ${this._constitutionUrl}`);
     try {
-      const response = await firstValueFrom(
+      const response: { data: string } = await firstValueFrom(
         this._httpService.get(this._constitutionUrl, {
           responseType: 'arraybuffer',
           transformResponse: [
-            (data) => Buffer.from(data, 'binary').toString('latin1'),
+            (data: ArrayBuffer) => Buffer.from(data, 'binary').toString('latin1'),
           ],
         }),
       );
       this._logger.log('Successfully fetched HTML.');
       return response.data;
-    } catch (error: any) {
-      this._logger.error(
-        `Error fetching constitution HTML: ${error.message}`,
-        error.stack,
-      );
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this._logger.error(
+          `Error fetching constitution HTML: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this._logger.error(
+          `Error fetching constitution HTML: ${String(error)}`,
+        );
+      }
       throw error;
     }
   }
@@ -152,137 +158,71 @@ export class ConstitutionScrapingService {
       let elementType: RawConstitutionDataItem['elementType'] | null = null;
       const attributes: { [key: string]: string } = {};
       if (element.find('a').length > 0) {
-        attributes['href'] = element.find('a').attr('href') || '';
+        attributes['href'] = element.find('a').attr('href') ?? '';
       }
 
-      // --- Context Detection (Titles, Chapters, Sections) ---
-      // These are heuristics and highly dependent on Planalto's specific (and often inconsistent) formatting.
-      // Relies on text content, font tags, and bold tags. This section requires the most testing and refinement.
+      // --- Element Type Detection Helpers ---
+      const isCenteredOrBold = (): boolean =>
+        element.attr('align') === 'center' || element.find('b').length > 0;
 
-      // Emenda Constitucional (often centered, bold, specific font)
-      if (
-        /^EMENDA CONSTITUCIONAL Nº \d+/i.test(text) &&
-        (element.attr('align') === 'center' || element.find('b').length > 0)
-      ) {
-        elementType = 'EMENDA CONSTITUCIONAL';
-        // Reset context as it's a new top-level declaration
-        currentContext = { title: text };
-      }
-      // ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS
-      else if (
+      const isEmenda = () =>
+        /^EMENDA CONSTITUCIONAL Nº \d+/i.test(text) && isCenteredOrBold();
+      const isAdct = () =>
         /^ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS/i.test(text) &&
-        (element.attr('align') === 'center' || element.find('b').length > 0)
-      ) {
-        elementType = 'ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS';
-        currentContext = { title: text }; // Reset for ADCT
-      }
-      // PREÂMBULO
-      else if (
-        /^PREÂMBULO/i.test(text) &&
-        (element.attr('align') === 'center' || element.find('b').length > 0)
-      ) {
-        elementType = 'PREÂMBULO';
-        currentContext = { title: text }; // Preâmbulo is its own context
-      }
-      // TÍTULO (Usually centered, bold, larger font)
-      else if (
-        text.startsWith('TÍTULO') &&
-        (element.attr('align') === 'center' || element.find('b').length > 0)
-      ) {
-        elementType = 'TÍTULO';
-        currentContext = {
-          title: text,
-          chapter: undefined,
-          section: undefined,
-          subSection: undefined,
-          articleNumber: undefined,
-        };
-      }
-      // CAPÍTULO
-      else if (
-        text.startsWith('CAPÍTULO') &&
-        (element.attr('align') === 'center' || element.find('b').length > 0)
-      ) {
-        elementType = 'CAPÍTULO';
-        currentContext.chapter = text;
-        currentContext.section = undefined;
-        currentContext.subSection = undefined;
-        currentContext.articleNumber = undefined;
-      }
-      // SEÇÃO
-      else if (
-        text.startsWith('Seção ') &&
-        (element.attr('align') === 'center' || element.find('b').length > 0)
-      ) {
-        // Note: "Seção" not always all caps
-        elementType = 'SEÇÃO';
-        currentContext.section = text;
-        currentContext.subSection = undefined;
-        currentContext.articleNumber = undefined;
-      }
-      // SUBSEÇÃO
-      else if (
-        text.startsWith('Subseção ') &&
-        (element.attr('align') === 'center' || element.find('b').length > 0)
-      ) {
-        elementType = 'SUBSEÇÃO';
-        currentContext.subSection = text;
-        currentContext.articleNumber = undefined;
-      }
-      // Artigo (Art. Xº ...)
-      else if (/^Art\.\s*\d+º?\.?/i.test(text)) {
-        elementType = 'Artigo';
-        currentContext.articleNumber = text.match(/^Art\.\s*\d+º?\.?/i)?.[0];
-        // Text of the article often continues after the "Art. Xº." part
-        text = text.replace(/^Art\.\s*\d+º?\.?\s*/i, '').trim();
-        if (text.length === 0 && element.next('p').length > 0) {
-          // Sometimes the article text is in the next <p>
-          text = element.next('p').text().trim().replace(/\s\s+/g, ' ');
-        }
-      }
-      // Parágrafo (§ Xº ...)
-      else if (
-        /^§\s*\d+º?\.?/i.test(text) ||
-        text.startsWith('Parágrafo único.')
-      ) {
-        elementType = 'Parágrafo';
-      }
-      // Inciso (Roman numerals I, II, ..., or with text like "Inciso X -")
-      else if (
+        isCenteredOrBold();
+      const isPreambulo = () =>
+        /^PREÂMBULO/i.test(text) && isCenteredOrBold();
+      const isTitulo = () => text.startsWith('TÍTULO') && isCenteredOrBold();
+      const isCapitulo = () =>
+        text.startsWith('CAPÍTULO') && isCenteredOrBold();
+      const isSecao = () => text.startsWith('Seção ') && isCenteredOrBold();
+      const isSubsecao = () =>
+        text.startsWith('Subseção ') && isCenteredOrBold();
+      const isArtigo = () => /^Art\.\s*\d+º?\.?/i.test(text);
+      const isParagrafo = () =>
+        /^§\s*\d+º?\.?/i.test(text) || text.startsWith('Parágrafo único.');
+      const isInciso = () =>
         /^([IVXLCDM]+)\s*-\s*/.test(text) ||
-        text.toLowerCase().startsWith('inciso ')
-      ) {
-        elementType = 'Inciso';
-      }
-      // Alínea (letters a), b) ...)
-      else if (/^[a-z]\)\s+/.test(text)) {
-        elementType = 'Alínea';
-      }
-      // Assinatura (Name of signatories at the end, often all caps)
-      else if (
+        text.toLowerCase().startsWith('inciso ');
+      const isAlinea = () => /^[a-z]\)\s+/.test(text);
+      const isAssinatura = () =>
         element.attr('align') === 'center' &&
         text === text.toUpperCase() &&
         text.split(' ').length >= 2 &&
         text.split(' ').length <= 5 &&
-        $(el).nextAll('p:contains("Brasília")').length > 0
-      ) {
-        elementType = 'ASSINATURA';
-      }
-      // Local e Data (Brasília, ...)
-      else if (
+        $(el).nextAll('p:contains("Brasília")').length > 0;
+      const isLocalData = () =>
         /^Brasília,\s*\d+\s*de\s*[a-zA-Z]+\s*de\s*\d{4}\./i.test(text) &&
-        element.attr('align') === 'center'
-      ) {
-        elementType = 'LOCAL_DATA';
-      }
-      // Texto Constitucional Promulgado (the final declaration)
-      else if (
+        element.attr('align') === 'center';
+      const isTextoPromulgado = () =>
         /^Nós, representantes do povo brasileiro/i.test(text) ||
-        /A ASSEMBLEIA NACIONAL CONSTITUINTE/i.test(text)
-      ) {
-        elementType = 'TEXTO_CONSTITUCIONAL_PROMULGADO';
-        // This might also be part of Preâmbulo or a distinct section
-      }
+        /A ASSEMBLEIA NACIONAL CONSTITUINTE/i.test(text);
+
+      const typeDeterminationResult = this._updateContextAndDetermineType(
+        text,
+        element,
+        currentContext,
+        {
+          isEmenda,
+          isAdct,
+          isPreambulo,
+          isTitulo,
+          isCapitulo,
+          isSecao,
+          isSubsecao,
+          isArtigo,
+          isParagrafo,
+          isInciso,
+          isAlinea,
+          isAssinatura,
+          isLocalData,
+          isTextoPromulgado,
+        },
+      );
+
+      elementType = typeDeterminationResult.elementType;
+      text = typeDeterminationResult.updatedText; // text might be modified (e.g. for Artigo)
+      // currentContext is modified by reference within _updateContextAndDetermineType
 
       // If type still not determined, and it's not a clear structural element,
       // it might be a continuation of the previous element or general text.
@@ -300,12 +240,12 @@ export class ConstitutionScrapingService {
           // it could be introductory text for that section.
           // Assign it based on the most specific parent context available.
           if (currentContext.subSection)
-            elementType = 'SUBSEÇÃO'; // CORRECTED CASE
+            elementType = 'SUBSEÇÃO';
           else if (currentContext.section)
-            elementType = 'SEÇÃO'; // CORRECTED CASE
+            elementType = 'SEÇÃO';
           else if (currentContext.chapter)
-            elementType = 'CAPÍTULO'; // CORRECTED CASE
-          else if (currentContext.title) elementType = 'TÍTULO'; // CORRECTED CASE
+            elementType = 'CAPÍTULO';
+          else if (currentContext.title) elementType = 'TÍTULO';
         }
       }
 
@@ -335,6 +275,101 @@ export class ConstitutionScrapingService {
     return items;
   }
 
+  // Helper for _parseConstitutionHtml to reduce cognitive complexity
+  private _updateContextAndDetermineType(
+    initialText: string,
+    element: cheerio.Cheerio<cheerio.Element>,
+    currentContext: Partial<RawConstitutionDataItem['hierarchicalContext']>, // Modified by reference
+    isTypeChecks: {
+      isEmenda: () => boolean;
+      isAdct: () => boolean;
+      isPreambulo: () => boolean;
+      isTitulo: () => boolean;
+      isCapitulo: () => boolean;
+      isSecao: () => boolean;
+      isSubsecao: () => boolean;
+      isArtigo: () => boolean;
+      isParagrafo: () => boolean;
+      isInciso: () => boolean;
+      isAlinea: () => boolean;
+      isAssinatura: () => boolean;
+      isLocalData: () => boolean;
+      isTextoPromulgado: () => boolean;
+    },
+  ): {
+    elementType: RawConstitutionDataItem['elementType'] | null;
+    updatedText: string;
+  } {
+    let elementType: RawConstitutionDataItem['elementType'] | null = null;
+    let text = initialText;
+
+    if (isTypeChecks.isEmenda()) {
+      elementType = 'EMENDA CONSTITUCIONAL';
+      // Reset context for these top-level elements
+      Object.keys(currentContext).forEach(
+        (k) => delete currentContext[k as keyof typeof currentContext],
+      );
+      currentContext.title = text;
+    } else if (isTypeChecks.isAdct()) {
+      elementType = 'ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS';
+      Object.keys(currentContext).forEach(
+        (k) => delete currentContext[k as keyof typeof currentContext],
+      );
+      currentContext.title = text;
+    } else if (isTypeChecks.isPreambulo()) {
+      elementType = 'PREÂMBULO';
+      Object.keys(currentContext).forEach(
+        (k) => delete currentContext[k as keyof typeof currentContext],
+      );
+      currentContext.title = text;
+    } else if (isTypeChecks.isTitulo()) {
+      elementType = 'TÍTULO';
+      currentContext.title = text;
+      currentContext.chapter = undefined;
+      currentContext.section = undefined;
+      currentContext.subSection = undefined;
+      currentContext.articleNumber = undefined;
+    } else if (isTypeChecks.isCapitulo()) {
+      elementType = 'CAPÍTULO';
+      currentContext.chapter = text;
+      currentContext.section = undefined;
+      currentContext.subSection = undefined;
+      currentContext.articleNumber = undefined;
+    } else if (isTypeChecks.isSecao()) {
+      elementType = 'SEÇÃO';
+      currentContext.section = text;
+      currentContext.subSection = undefined;
+      currentContext.articleNumber = undefined;
+    } else if (isTypeChecks.isSubsecao()) {
+      elementType = 'SUBSEÇÃO';
+      currentContext.subSection = text;
+      currentContext.articleNumber = undefined;
+    } else if (isTypeChecks.isArtigo()) {
+      elementType = 'Artigo';
+      currentContext.articleNumber = (/^Art\.\s*\d+º?\.?/i.exec(text))?.[0];
+      // Text of the article often continues after the "Art. Xº." part
+      text = text.replace(/^Art\.\s*\d+º?\.?\s*/i, '').trim();
+      if (text.length === 0 && element.next('p').length > 0) {
+        // Sometimes the article text is in the next <p>
+        text = element.next('p').text().trim().replace(/\s\s+/g, ' ');
+      }
+    } else if (isTypeChecks.isParagrafo()) {
+      elementType = 'Parágrafo';
+    } else if (isTypeChecks.isInciso()) {
+      elementType = 'Inciso';
+    } else if (isTypeChecks.isAlinea()) {
+      elementType = 'Alínea';
+    } else if (isTypeChecks.isAssinatura()) {
+      elementType = 'ASSINATURA';
+    } else if (isTypeChecks.isLocalData()) {
+      elementType = 'LOCAL_DATA';
+    } else if (isTypeChecks.isTextoPromulgado()) {
+      elementType = 'TEXTO_CONSTITUCIONAL_PROMULGADO';
+    }
+
+    return { elementType, updatedText: text };
+  }
+
   /**
    * Transforms the raw parsed data into the structured format required for Typesense indexing.
    * @param rawItems - Array of RawConstitutionDataItem from the parser.
@@ -351,95 +386,98 @@ export class ConstitutionScrapingService {
 
     let currentFullReferenceParts: string[] = [];
     let lastArticleNumberForContext: string | undefined;
+    let idSuffix: string; // Declare idSuffix here
 
     for (const item of rawItems) {
-      let idSuffix =
-        item.text.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '') +
-        '-' +
-        item.lineNumber;
       let itemNumber: string | undefined;
       let typeForIndex: ConstitutionIndexSchema['type'] =
-        item.elementType as ConstitutionIndexSchema['type']; // Initial cast
+        item.elementType as ConstitutionIndexSchema['type'];
 
-      // Build full reference and extract item number
-      if (item.elementType === 'TÍTULO') {
-        currentFullReferenceParts = [item.text];
-        lastArticleNumberForContext = undefined;
-      } else if (item.elementType === 'CAPÍTULO') {
-        currentFullReferenceParts = [
-          item.hierarchicalContext.title || 'Desconhecido',
-          item.text,
-        ];
-        lastArticleNumberForContext = undefined;
-      } else if (item.elementType === 'SEÇÃO') {
-        currentFullReferenceParts = [
-          item.hierarchicalContext.title || 'Desconhecido',
-          item.hierarchicalContext.chapter || 'Desconhecido',
-          item.text,
-        ];
-        lastArticleNumberForContext = undefined;
-      } else if (item.elementType === 'SUBSEÇÃO') {
-        currentFullReferenceParts = [
-          item.hierarchicalContext.title || 'Desconhecido',
-          item.hierarchicalContext.chapter || 'Desconhecido',
-          item.hierarchicalContext.section || 'Desconhecido',
-          item.text,
-        ];
-        lastArticleNumberForContext = undefined;
-      } else if (item.elementType === 'Artigo') {
-        itemNumber =
-          item.hierarchicalContext.articleNumber ||
-          item.text.match(/^Art\.\s*\d+º?\.?/i)?.[0];
-        if (itemNumber) {
+      switch (item.elementType) {
+        case 'TÍTULO':
+          currentFullReferenceParts = [item.text];
+          lastArticleNumberForContext = undefined;
+          break;
+        case 'CAPÍTULO':
           currentFullReferenceParts = [
-            item.hierarchicalContext.title || '',
-            item.hierarchicalContext.chapter || '',
-            item.hierarchicalContext.section || '',
-            item.hierarchicalContext.subSection || '',
-            itemNumber,
-          ].filter(Boolean);
-          lastArticleNumberForContext = itemNumber;
-        }
-        typeForIndex = 'Artigo';
-      } else if (item.elementType === 'Parágrafo') {
-        itemNumber = item.text.match(/^§\s*\d+º?\.?|^Parágrafo único\./i)?.[0];
-        if (itemNumber) currentFullReferenceParts.push(itemNumber);
-        typeForIndex = 'Parágrafo';
-      } else if (item.elementType === 'Inciso') {
-        itemNumber =
-          item.text.match(/^([IVXLCDM]+)\s*-/i)?.[1] ||
-          item.text.match(/^Inciso\s+([IVXLCDM]+)/i)?.[1];
-        if (itemNumber) currentFullReferenceParts.push(`Inciso ${itemNumber}`);
-        typeForIndex = 'Inciso';
-      } else if (item.elementType === 'Alínea') {
-        itemNumber = item.text.match(/^([a-z])\)/i)?.[1];
-        if (itemNumber) currentFullReferenceParts.push(`Alínea ${itemNumber}`);
-        typeForIndex = 'Alínea';
-      } else if (
-        item.elementType === 'PREÂMBULO' ||
-        item.elementType === 'TEXTO_CONSTITUCIONAL_PROMULGADO' ||
-        item.elementType === 'EMENDA CONSTITUCIONAL' ||
-        item.elementType === 'ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS'
-      ) {
-        currentFullReferenceParts = [item.text];
-        lastArticleNumberForContext = undefined; // Reset article context for these top-level elements
-        typeForIndex = item.elementType as ConstitutionIndexSchema['type'];
-        if (
-          item.elementType ===
-            'ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS' &&
-          /^Art\.\s*\d+º?\.?/i.test(item.text)
-        ) {
-          // ADCT articles are special
-          typeForIndex = 'ADCTArtigo';
-          itemNumber = item.text.match(/^Art\.\s*\d+º?\.?/i)?.[0];
-          currentFullReferenceParts.push(itemNumber || 'Artigo ADCT');
-        }
-      } else {
-        // For unclassified items that made it through, or ASSINATURA, LOCAL_DATA which we might not index
-        this._logger.debug(
-          `Skipping transformation for item type: ${item.elementType} - Text: ${item.text.substring(0, 50)}`,
-        );
-        continue;
+            item.hierarchicalContext.title ?? 'Desconhecido',
+            item.text,
+          ];
+          lastArticleNumberForContext = undefined;
+          break;
+        case 'SEÇÃO':
+          currentFullReferenceParts = [
+            item.hierarchicalContext.title ?? 'Desconhecido',
+            item.hierarchicalContext.chapter ?? 'Desconhecido',
+            item.text,
+          ];
+          lastArticleNumberForContext = undefined;
+          break;
+        case 'SUBSEÇÃO':
+          currentFullReferenceParts = [
+            item.hierarchicalContext.title ?? 'Desconhecido',
+            item.hierarchicalContext.chapter ?? 'Desconhecido',
+            item.hierarchicalContext.section ?? 'Desconhecido',
+            item.text,
+          ];
+          lastArticleNumberForContext = undefined;
+          break;
+        case 'Artigo':
+          itemNumber =
+            item.hierarchicalContext.articleNumber ??
+            (/^Art\.\s*\d+º?\.?/i.exec(item.text))?.[0];
+          if (itemNumber) {
+            currentFullReferenceParts = [
+              item.hierarchicalContext.title ?? '',
+              item.hierarchicalContext.chapter ?? '',
+              item.hierarchicalContext.section ?? '',
+              item.hierarchicalContext.subSection ?? '',
+              itemNumber,
+            ].filter(Boolean);
+            lastArticleNumberForContext = itemNumber;
+          }
+          typeForIndex = 'Artigo';
+          break;
+        case 'Parágrafo':
+          itemNumber = (/^§\s*\d+º?\.?|^Parágrafo único\./i.exec(item.text))?.[0];
+          if (itemNumber) currentFullReferenceParts.push(itemNumber);
+          typeForIndex = 'Parágrafo';
+          break;
+        case 'Inciso':
+          itemNumber =
+            (/^([IVXLCDM]+)\s*-/i.exec(item.text))?.[1] ??
+            (/^Inciso\s+([IVXLCDM]+)/i.exec(item.text))?.[1];
+          if (itemNumber) currentFullReferenceParts.push(`Inciso ${itemNumber}`);
+          typeForIndex = 'Inciso';
+          break;
+        case 'Alínea':
+          itemNumber = (/^([a-z])\)/i.exec(item.text))?.[1];
+          if (itemNumber) currentFullReferenceParts.push(`Alínea ${itemNumber}`);
+          typeForIndex = 'Alínea';
+          break;
+        case 'PREÂMBULO':
+        case 'TEXTO_CONSTITUCIONAL_PROMULGADO':
+        case 'EMENDA CONSTITUCIONAL':
+        case 'ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS':
+          currentFullReferenceParts = [item.text];
+          lastArticleNumberForContext = undefined;
+          typeForIndex = item.elementType as ConstitutionIndexSchema['type'];
+          if (
+            item.elementType ===
+              'ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS' &&
+            /^Art\.\s*\d+º?\.?/i.test(item.text)
+          ) {
+            typeForIndex = 'ADCTArtigo';
+            itemNumber = (/^Art\.\s*\d+º?\.?/i.exec(item.text))?.[0];
+            currentFullReferenceParts.push(itemNumber ?? 'Artigo ADCT');
+          }
+          break;
+        default:
+          // For unclassified items that made it through, or ASSINATURA, LOCAL_DATA which we might not index
+          this._logger.debug(
+            `Skipping transformation for item type: ${item.elementType} - Text: ${item.text.substring(0, 50)}`,
+          );
+          continue; // Skips to the next item in the loop
       }
 
       const fullReference = currentFullReferenceParts
@@ -453,7 +491,7 @@ export class ConstitutionScrapingService {
         type: typeForIndex,
         number: itemNumber?.trim(),
         fullReference,
-        text: item.text.replace(itemNumber || '', '').trim(), // Remove the number part from the main text if present
+        text: item.text.replace(itemNumber ?? '', '').trim(), // Remove the number part from the main text if present
         hierarchicalTextContext:
           [
             item.hierarchicalContext.title,
@@ -468,7 +506,7 @@ export class ConstitutionScrapingService {
                     r.elementType === 'Artigo' &&
                     r.hierarchicalContext.articleNumber ===
                       item.hierarchicalContext.articleNumber,
-                )?.text || ''
+                )?.text ?? ''
               : '',
           ]
             .filter(Boolean)
@@ -479,7 +517,7 @@ export class ConstitutionScrapingService {
         parentSubSection: item.hierarchicalContext.subSection,
         parentArticleNumber:
           item.elementType !== 'Artigo'
-            ? item.hierarchicalContext.articleNumber ||
+            ? item.hierarchicalContext.articleNumber ??
               lastArticleNumberForContext
             : undefined,
         sourceUrl: item.sourceUrl,
@@ -503,15 +541,15 @@ export class ConstitutionScrapingService {
     if (context.chapter) tags.add(context.chapter.substring(0, 50));
 
     // Example keyword-based tagging (very basic)
-    if (text.match(/direitos e garantias fundamentais/i))
+    if (/direitos e garantias fundamentais/i.test(text))
       tags.add('Direitos Fundamentais');
-    if (text.match(/habeas corpus/i)) tags.add('Habeas Corpus');
-    if (text.match(/poder legislativo/i)) tags.add('Poder Legislativo');
-    if (text.match(/poder executivo/i)) tags.add('Poder Executivo');
-    if (text.match(/poder judiciário/i)) tags.add('Poder Judiciário');
-    if (text.match(/ordem econômica e financeira/i))
+    if (/habeas corpus/i.test(text)) tags.add('Habeas Corpus');
+    if (/poder legislativo/i.test(text)) tags.add('Poder Legislativo');
+    if (/poder executivo/i.test(text)) tags.add('Poder Executivo');
+    if (/poder judiciário/i.test(text)) tags.add('Poder Judiciário');
+    if (/ordem econômica e financeira/i.test(text))
       tags.add('Ordem Econômica');
-    if (text.match(/meio ambiente/i)) tags.add('Meio Ambiente');
+    if (/meio ambiente/i.test(text)) tags.add('Meio Ambiente');
 
     return Array.from(tags);
   }
@@ -550,11 +588,17 @@ export class ConstitutionScrapingService {
         this._logger.warn('No documents were transformed for indexing.');
       }
       this._logger.log('Constitution processing and indexing completed.');
-    } catch (error: any) {
-      this._logger.error(
-        `Critical error during constitution processing: ${error.message}`,
-        error.stack,
-      );
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this._logger.error(
+          `Critical error during constitution processing: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this._logger.error(
+          `Critical error during constitution processing: ${String(error)}`,
+        );
+      }
     }
   }
 }
