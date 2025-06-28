@@ -46,9 +46,9 @@ export const typesenseClientProvider: Provider = {
       apiKey,
       connectionTimeoutSeconds: configService.get<number>(
         'TYPESENSE_TIMEOUT_SECONDS',
-        5,
+        50,
       ),
-      numRetries: configService.get<number>('TYPESENSE_NUM_RETRIES', 3),
+      numRetries: configService.get<number>('TYPESENSE_NUM_RETRIES', 5),
     });
   },
   inject: [ConfigService],
