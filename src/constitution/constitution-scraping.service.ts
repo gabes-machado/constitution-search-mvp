@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import * as cheerio from 'cheerio';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -7,92 +8,126 @@ import {
   ConstitutionIndexSchema,
 } from './dto/constitution-data.dto';
 import { TypesenseService } from '../typesense/typesense.service';
+import { CacheService } from '../cache/cache.service';
 import { CollectionCreateSchema } from 'typesense/lib/Typesense/Collections';
 
-export const CONSTITUTION_COLLECTION_NAME = 'brazilian_constitution_v1';
-
-// Schema for the Typesense collection
-export const CONSTITUTION_TYPESENSE_SCHEMA: CollectionCreateSchema = {
-  name: CONSTITUTION_COLLECTION_NAME,
-  fields: [
-    { name: 'id', type: 'string' },
-    { name: 'type', type: 'string', facet: true },
-    { name: 'number', type: 'string', optional: true, facet: true, sort: true }, // For Art. X, Inciso Y, etc.
-    {
-      name: 'fullReference',
-      type: 'string',
-      infix: true,
-      sort: true,
-    },
-    { name: 'text', type: 'string', infix: true },
-    {
-      name: 'hierarchicalTextContext',
-      type: 'string',
-      infix: true,
-      optional: true,
-    },
-    { name: 'parentTitle', type: 'string', optional: true, facet: true },
-    { name: 'parentChapter', type: 'string', optional: true, facet: true },
-    { name: 'parentSection', type: 'string', optional: true, facet: true },
-    { name: 'parentSubSection', type: 'string', optional: true, facet: true },
-    {
-      name: 'parentArticleNumber',
-      type: 'string',
-      optional: true,
-      facet: true,
-    },
-    { name: 'sourceUrl', type: 'string' },
-    { name: 'lastIndexedAt', type: 'int64', sort: true },
-    {
-      name: 'tags',
-      type: 'string[]',
-      optional: true,
-      facet: true,
-      infix: true,
-    },
-    {
-      name: 'embedding',
-      type: 'float[]',
-      embed: {
-        from: ['text', 'fullReference', 'hierarchicalTextContext'],
-        model_config: {
-          model_name: 'ts/all-MiniLM-L12-v2',
-        },
-      },
-    },
-  ],
-  default_sorting_field: 'fullReference', // Sort by full reference to maintain order
-  token_separators: [' ', '-', '.', ',', '/', '(', ')', ':'],
-};
+// Collection name will be retrieved from environment variables
 
 @Injectable()
 export class ConstitutionScrapingService {
   private readonly _logger = new Logger(ConstitutionScrapingService.name);
-  private readonly _constitutionUrl =
-    'https://www.planalto.gov.br/ccivil_03/constituicao/ConstituicaoCompilado.htm';
+  private readonly _constitutionUrl: string;
+  private readonly _collectionName: string;
+  private readonly _batchSize: number;
 
   constructor(
     private readonly _httpService: HttpService,
     private readonly _typesenseService: TypesenseService,
-  ) {}
+    private readonly _configService: ConfigService,
+    private readonly _cacheService: CacheService,
+  ) {
+    this._constitutionUrl = this._configService.get<string>(
+      'CONSTITUTION_URL',
+      'https://www.planalto.gov.br/ccivil_03/constituicao/ConstituicaoCompilado.htm'
+    );
+    this._collectionName = this._configService.get<string>(
+      'CONSTITUTION_COLLECTION_NAME',
+      'brazilian_constitution_v1'
+    );
+    this._batchSize = this._configService.get<number>('INDEXING_BATCH_SIZE', 200);
+  }
+
+  /**
+   * Method to get the Typesense schema with dynamic collection name
+   */
+  private _getTypesenseSchema(): CollectionCreateSchema {
+    return {
+      name: this._collectionName,
+      fields: [
+        { name: 'id', type: 'string' },
+        { name: 'type', type: 'string', facet: true },
+        { name: 'number', type: 'string', optional: true, facet: true, sort: true },
+        {
+          name: 'fullReference',
+          type: 'string',
+          infix: true,
+          sort: true,
+        },
+        { name: 'text', type: 'string', infix: true },
+        {
+          name: 'hierarchicalTextContext',
+          type: 'string',
+          infix: true,
+          optional: true,
+        },
+        { name: 'parentTitle', type: 'string', optional: true, facet: true },
+        { name: 'parentChapter', type: 'string', optional: true, facet: true },
+        { name: 'parentSection', type: 'string', optional: true, facet: true },
+        { name: 'parentSubSection', type: 'string', optional: true, facet: true },
+        {
+          name: 'parentArticleNumber',
+          type: 'string',
+          optional: true,
+          facet: true,
+        },
+        { name: 'sourceUrl', type: 'string' },
+        { name: 'lastIndexedAt', type: 'int64', sort: true },
+        {
+          name: 'tags',
+          type: 'string[]',
+          optional: true,
+          facet: true,
+          infix: true,
+        },
+        {
+          name: 'embedding',
+          type: 'float[]',
+          embed: {
+            from: ['text', 'fullReference', 'hierarchicalTextContext'],
+            model_config: {
+              model_name: 'ts/all-MiniLM-L12-v2',
+            },
+          },
+        },
+      ],
+      default_sorting_field: 'fullReference',
+      token_separators: [' ', '-', '.', ',', '/', '(', ')', ':'],
+    };
+  }
 
   /**
    * Fetches the HTML content of the Brazilian Constitution.
    * Handles character encoding specific to the source.
    */
   private async _fetchConstitutionHtml(): Promise<string> {
-    this._logger.log(`Workspaceing HTML from ${this._constitutionUrl}`);
+    this._logger.log(`Fetching HTML from ${this._constitutionUrl}`);
+    
+    // Try to get from cache first
+    const cachedHtml = await this._cacheService.getHtmlContent(this._constitutionUrl);
+    if (cachedHtml) {
+      this._logger.log('Using cached HTML content');
+      return cachedHtml;
+    }
+    
     try {
+      this._logger.log('Fetching fresh HTML from external source');
       const response = await firstValueFrom(
         this._httpService.get(this._constitutionUrl, {
           responseType: 'arraybuffer',
           transformResponse: [
             (data) => Buffer.from(data, 'binary').toString('latin1'),
           ],
+          timeout: 30000, // 30 second timeout
         }),
       );
-      this._logger.log('Successfully fetched HTML.');
-      return response.data;
+      
+      const htmlContent = response.data;
+      this._logger.log('Successfully fetched HTML from external source');
+      
+      // Cache the HTML content for future use (24 hours TTL)
+      await this._cacheService.setHtmlContent(this._constitutionUrl, htmlContent, 24 * 60 * 60);
+      
+      return htmlContent;
     } catch (error: any) {
       this._logger.error(
         `Error fetching constitution HTML: ${error.message}`,
@@ -523,11 +558,11 @@ export class ConstitutionScrapingService {
     this._logger.log('Starting full constitution processing...');
     try {
       // Optional: Delete existing collection for a fresh start during MVP development
-      // await this._typesenseService.deleteCollectionIfExists(CONSTITUTION_COLLECTION_NAME);
+      // await this._typesenseService.deleteCollectionIfExists(this._collectionName);
 
       await this._typesenseService.ensureCollectionExists(
-        CONSTITUTION_COLLECTION_NAME,
-        CONSTITUTION_TYPESENSE_SCHEMA,
+        this._collectionName,
+        this._getTypesenseSchema(),
       );
 
       const html = await this._fetchConstitutionHtml();
@@ -542,10 +577,10 @@ export class ConstitutionScrapingService {
 
       if (documentsToIndex.length > 0) {
         await this._typesenseService.indexDocuments(
-          CONSTITUTION_COLLECTION_NAME,
+          this._collectionName,
           documentsToIndex,
-          200,
-        ); // Batch size 200
+          this._batchSize,
+        );
       } else {
         this._logger.warn('No documents were transformed for indexing.');
       }

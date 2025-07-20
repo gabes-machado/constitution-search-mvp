@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ConstitutionScrapingService } from './constitution-scraping.service';
 import { TypesenseModule } from '../typesense/typesense.module';
+import { CacheConfigModule } from '../cache/cache.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { TypesenseModule } from '../typesense/typesense.module';
       },
     }),
     TypesenseModule,
+    CacheConfigModule,
   ],
   providers: [ConstitutionScrapingService],
   exports: [ConstitutionScrapingService],
