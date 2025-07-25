@@ -22,12 +22,7 @@ export class AppService {
       'Received request to trigger constitution scraping and indexing.',
     );
     try {
-      // The processConstitution method in ConstitutionScrapingService handles logging.
-      // We might want to get a count of items processed if the method returns it.
       await this._constitutionScraper.processConstitution();
-      // If processConstitution could return a count:
-      // const result = await this._constitutionScraper.processConstitution();
-      // return { message: 'Constitution scraping and indexing process initiated successfully.', itemsProcessed: result.count };
       return {
         message:
           'Constitution scraping and indexing process initiated successfully. Check logs for details.',
@@ -52,10 +47,6 @@ export class AppService {
       'Received request to test constitution parsing (dry run).',
     );
     try {
-      // Temporarily expose protected methods for testing via this service method
-      // In a real scenario, you might refactor ConstitutionScrapingService
-      // to make fetching and parsing more publicly testable if needed,
-      // or use a more formal testing approach (unit/integration tests).
       const html = await (
         this._constitutionScraper as any
       )._fetchConstitutionHtml();

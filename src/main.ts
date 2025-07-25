@@ -46,7 +46,6 @@ async function bootstrap() {
     },
   });
 
-  // Start listening for requests
   await app.listen(port);
 
   const appUrl = await app.getUrl();

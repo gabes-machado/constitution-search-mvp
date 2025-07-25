@@ -9,7 +9,7 @@ import { typesenseClientProvider } from './typesense.provider';
  * Marked as Global to make TypesenseService available throughout the application
  * without needing to import TypesenseModule in every other module.
  */
-@Global() // Make this module global
+@Global()
 @Module({
   imports: [
     ConfigModule, // Ensures ConfigService is available for the provider

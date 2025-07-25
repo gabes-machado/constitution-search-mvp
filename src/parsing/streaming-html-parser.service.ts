@@ -4,6 +4,9 @@ import { pipeline } from 'stream/promises';
 import * as cheerio from 'cheerio';
 import { RawConstitutionDataItem } from '../constitution/dto/constitution-data.dto';
 
+/**
+ * Options for streaming HTML parsing.
+ */
 export interface StreamingParseOptions {
   chunkSize?: number;
   maxMemoryUsage?: number;
@@ -16,7 +19,11 @@ export class StreamingHtmlParserService {
   private readonly logger = new Logger(StreamingHtmlParserService.name);
 
   /**
-   * Parse HTML content using streaming approach to reduce memory usage
+   * Parse HTML content using streaming approach to reduce memory usage.
+   * @param htmlContent - The HTML content to parse.
+   * @param sourceUrl - The URL of the source document.
+   * @param options - The options for parsing.
+   * @returns A promise that resolves to an array of RawConstitutionDataItem objects.
    */
   async parseHtmlStream(
     htmlContent: string,
@@ -96,7 +103,10 @@ export class StreamingHtmlParserService {
   }
 
   /**
-   * Create chunks from HTML content for streaming processing
+   * Create chunks from HTML content for streaming processing.
+   * @param htmlContent - The HTML content to create chunks from.
+   * @param chunkSize - The size of each chunk.
+   * @returns A generator that yields chunks of HTML content.
    */
   private *createHtmlChunks(htmlContent: string, chunkSize: number): Generator<string> {
     let position = 0;
@@ -124,7 +134,12 @@ export class StreamingHtmlParserService {
   }
 
   /**
-   * Parse a chunk of HTML content
+   * Parse a chunk of HTML content.
+   * @param htmlChunk - The HTML chunk to parse.
+   * @param sourceUrl - The URL of the source document.
+   * @param context - The hierarchical context of the chunk.
+   * @param startLineNumber - The starting line number of the chunk.
+   * @returns An array of RawConstitutionDataItem objects.
    */
   private parseHtmlChunk(
     htmlChunk: string,
@@ -185,7 +200,10 @@ export class StreamingHtmlParserService {
   }
 
   /**
-   * Detect the type of constitutional element based on text patterns
+   * Detect the type of constitutional element based on text patterns.
+   * @param text - The text to detect the element type for.
+   * @param tagName - The tag name of the element.
+   * @returns The type of constitutional element, or null if not found.
    */
   private detectElementType(text: string, tagName?: string): RawConstitutionDataItem['elementType'] | null {
     // Title patterns
@@ -237,7 +255,11 @@ export class StreamingHtmlParserService {
   }
 
   /**
-   * Update hierarchical context based on element type
+   * Update hierarchical context based on element type.
+   * @param currentContext - The current hierarchical context.
+   * @param elementType - The type of constitutional element.
+   * @param text - The text of the element.
+   * @returns The updated hierarchical context.
    */
   private updateContext(
     currentContext: Partial<RawConstitutionDataItem['hierarchicalContext']>,
@@ -290,7 +312,9 @@ export class StreamingHtmlParserService {
   }
 
   /**
-   * Extract attributes from a cheerio element
+   * Extract attributes from a cheerio element.
+   * @param $element - The cheerio element to extract attributes from.
+   * @returns An object containing the extracted attributes.
    */
   private extractAttributes($element: any): { [key: string]: string } {
     const attributes: { [key: string]: string } = {};
@@ -309,7 +333,8 @@ export class StreamingHtmlParserService {
   }
 
   /**
-   * Get memory usage statistics
+   * Get memory usage statistics.
+   * @returns An object containing the memory usage statistics.
    */
   getMemoryUsage(): {
     heapUsed: number;

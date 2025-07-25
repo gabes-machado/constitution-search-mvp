@@ -30,7 +30,7 @@ export class TypesenseService {
       await this._typesenseClient.collections(name).retrieve();
       this._logger.log(`Collection "${name}" already exists.`);
     } catch (error: any) {
-      // More robust check for the specific "collection not found" error
+      // Robust check for the specific "collection not found" error
       if (error instanceof ObjectNotFound) {
         this._logger.log(
           `Collection "${name}" does not exist (ObjectNotFound caught). Attempting to create...`,
@@ -40,7 +40,7 @@ export class TypesenseService {
           this._logger.log(`Collection "${name}" created successfully.`);
           this._logger.debug(
             `Schema used for creation of "${name}": ${JSON.stringify(schema.fields.map((f) => f.name))}`,
-          ); // Log field names for brevity
+          );
         } catch (creationError: any) {
           this._logger.error(
             `Failed to CREATE collection "${name}": ${creationError.message}`,
@@ -52,7 +52,6 @@ export class TypesenseService {
           throw creationError;
         }
       } else {
-        // An unexpected error occurred during the retrieve operation
         this._logger.error(
           `Error during initial RETRIEVE of collection "${name}" (unexpected type or status): ${error.message} (Status: ${error.httpStatus})`,
           error.stack,
@@ -121,6 +120,11 @@ export class TypesenseService {
     );
   }
 
+  /**
+   * Deletes a collection if it exists.
+   * @param collectionName - The name of the collection to delete.
+   * @returns A promise that resolves when the collection is deleted.
+   */
   async deleteCollectionIfExists(collectionName: string): Promise<void> {
     try {
       await this._typesenseClient.collections(collectionName).retrieve();
@@ -142,6 +146,11 @@ export class TypesenseService {
     }
   }
 
+  /**
+   * Retrieves the schema of a collection.
+   * @param collectionName - The name of the collection to retrieve the schema for.
+   * @returns A promise that resolves to the schema of the collection.
+   */
   async getCollectionSchema(collectionName: string): Promise<CollectionSchema> {
     try {
       const schema = await this._typesenseClient
