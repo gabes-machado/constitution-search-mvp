@@ -97,14 +97,19 @@ export class MetricsService {
   }
 
   /**
-   * Get all metrics in Prometheus format
+   * Get all metrics in Prometheus format.
+   * @returns A Promise that resolves to a string containing the metrics in Prometheus format.
    */
   async getMetrics(): Promise<string> {
     return register.metrics();
   }
 
   /**
-   * Record HTTP request metrics
+   * Record HTTP request metrics.
+   * @param method - The HTTP method of the request.
+   * @param route - The route of the request.
+   * @param statusCode - The status code of the response.
+   * @param duration - The duration of the request in seconds.
    */
   recordHttpRequest(method: string, route: string, statusCode: number, duration: number) {
     this.httpRequestsTotal.inc({ method, route, status_code: statusCode });
@@ -112,7 +117,10 @@ export class MetricsService {
   }
 
   /**
-   * Record constitution scraping metrics
+   * Record constitution scraping metrics.
+   * @param status - The status of the scraping operation.
+   * @param duration - The duration of the scraping operation in seconds.
+   * @param itemsProcessed - The number of items processed.
    */
   recordConstitutionScraping(status: 'success' | 'failure', duration: number, itemsProcessed?: number) {
     this.constitutionScrapingTotal.inc({ status });
@@ -124,21 +132,28 @@ export class MetricsService {
   }
 
   /**
-   * Record cache operation metrics
+   * Record cache operation metrics.
+   * @param operation - The cache operation.
+   * @param result - The result of the cache operation.
    */
   recordCacheOperation(operation: 'get' | 'set' | 'delete', result: 'hit' | 'miss' | 'success' | 'error') {
     this.cacheOperationsTotal.inc({ operation, result });
   }
 
   /**
-   * Update cache hit ratio
+   * Update cache hit ratio.
+   * @param ratio - The cache hit ratio.
    */
   updateCacheHitRatio(ratio: number) {
     this.cacheHitRatio.set(ratio);
   }
 
   /**
-   * Record job metrics
+   * Record job metrics.
+   * @param queue - The job queue.
+   * @param status - The status of the job.
+   * @param duration - The duration of the job in seconds.
+   * @param jobType - The type of the job.
    */
   recordJob(queue: string, status: 'completed' | 'failed' | 'active', duration?: number, jobType?: string) {
     this.jobsTotal.inc({ queue, status });
@@ -149,7 +164,10 @@ export class MetricsService {
   }
 
   /**
-   * Update job queue metrics
+   * Update job queue metrics.
+   * @param queue - The job queue.
+   * @param active - The number of active jobs.
+   * @param waiting - The number of waiting jobs.
    */
   updateJobQueueMetrics(queue: string, active: number, waiting: number) {
     this.jobsActive.set({ queue }, active);
@@ -157,7 +175,10 @@ export class MetricsService {
   }
 
   /**
-   * Record Typesense operation metrics
+   * Record Typesense operation metrics.
+   * @param operation - The Typesense operation.
+   * @param status - The status of the operation.
+   * @param duration - The duration of the operation in seconds.
    */
   recordTypesenseOperation(operation: string, status: 'success' | 'error', duration: number) {
     this.typesenseOperationsTotal.inc({ operation, status });

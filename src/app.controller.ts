@@ -16,17 +16,15 @@ import { RolesGuard } from './auth/guards/roles.guard';
 import { Public } from './auth/decorators/public.decorator';
 import { Roles } from './auth/decorators/roles.decorator';
 import { AppService } from './app.service';
-// import { JobsService } from './jobs/jobs.service';
 import { RawConstitutionDataItem } from './constitution/dto/constitution-data.dto';
 
-@ApiTags('constitution') // Matches the tag in DocumentBuilder
+@ApiTags('constitution')
 @Controller('constitution')
 export class AppController {
   private readonly _logger = new Logger(AppController.name);
 
   constructor(
     private readonly _appService: AppService,
-    // private readonly _jobsService: JobsService,
   ) {}
 
   @Public()
@@ -76,8 +74,6 @@ export class AppController {
     status: 202,
     description:
       'Dry run parsing completed. Returns item count and a sample of parsed data.',
-    // Might define a DTO for this response if it becomes complex
-    // Example schema
     schema: {
       example: {
         message: 'Constitution parsing dry run completed.',
@@ -115,45 +111,5 @@ export class AppController {
       this._logger.error('Error in test-parse endpoint', error.stack);
       throw new Error(`Parsing test failed: ${error.message}`);
     }
-  }
-
-  @Get('job/:jobId')
-  @ApiOperation({ summary: 'Get the status of a background job' })
-  @ApiResponse({ status: 200, description: 'Job status retrieved successfully' })
-  async getJobStatus(@Param('jobId') jobId: string) {
-    this._logger.log(`GET /constitution/job/${jobId} endpoint hit.`);
-    
-    // Temporarily disabled - JobsService not available
-    return {
-      jobId,
-      status: 'disabled',
-      message: 'Job processing temporarily disabled - testing core features',
-    };
-  }
-
-  @Get('jobs/stats')
-  @ApiOperation({ summary: 'Get queue statistics and job counts' })
-  @ApiResponse({ status: 200, description: 'Queue statistics retrieved successfully' })
-  async getQueueStats() {
-    this._logger.log('GET /constitution/jobs/stats endpoint hit.');
-    // Temporarily disabled - JobsService not available
-    return {
-      message: 'Job processing temporarily disabled - testing core features',
-      status: 'disabled',
-    };
-  }
-
-  @Post('job/:jobId/cancel')
-  @ApiOperation({ summary: 'Cancel a queued or running job' })
-  @ApiResponse({ status: 200, description: 'Job cancelled successfully' })
-  async cancelJob(@Param('jobId') jobId: string) {
-    this._logger.log(`POST /constitution/job/${jobId}/cancel endpoint hit.`);
-    
-    // Temporarily disabled - JobsService not available
-    return {
-      jobId,
-      status: 'disabled',
-      message: 'Job processing temporarily disabled - testing core features',
-    };
   }
 }

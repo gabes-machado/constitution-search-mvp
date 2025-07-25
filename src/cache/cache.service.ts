@@ -10,6 +10,8 @@ export class CacheService {
 
   /**
    * Get cached HTML content
+   * @param url - The URL to retrieve cached HTML content for
+   * @returns The cached HTML content as a string, or null if not found
    */
   async getHtmlContent(url: string): Promise<string | null> {
     try {
@@ -31,6 +33,9 @@ export class CacheService {
 
   /**
    * Cache HTML content
+   * @param url - The URL to cache HTML content for
+   * @param content - The HTML content to cache
+   * @param ttl - The time-to-live for the cache entry (in seconds)
    */
   async setHtmlContent(url: string, content: string, ttl?: number): Promise<void> {
     try {
@@ -44,6 +49,8 @@ export class CacheService {
 
   /**
    * Get cached parsed data
+   * @param url - The URL to retrieve cached parsed data for
+   * @returns The cached parsed data as an array, or null if not found
    */
   async getParsedData(url: string): Promise<any[] | null> {
     try {
@@ -65,6 +72,9 @@ export class CacheService {
 
   /**
    * Cache parsed data
+   * @param url - The URL to cache parsed data for
+   * @param data - The parsed data to cache
+   * @param ttl - The time-to-live for the cache entry (in seconds)
    */
   async setParsedData(url: string, data: any[], ttl?: number): Promise<void> {
     try {
@@ -78,6 +88,7 @@ export class CacheService {
 
   /**
    * Clear cache for a specific URL
+   * @param url - The URL to clear cache for
    */
   async clearCache(url: string): Promise<void> {
     try {
@@ -98,8 +109,6 @@ export class CacheService {
    */
   async clearAllCache(): Promise<void> {
     try {
-      // For now, we'll just log that cache clearing was requested
-      // In production, you might want to implement pattern-based deletion
       this._logger.log('Cache clear all requested - implement pattern-based deletion if needed');
     } catch (error: any) {
       this._logger.error(`Cache clear all error: ${error.message}`);
@@ -108,6 +117,8 @@ export class CacheService {
 
   /**
    * Generate a consistent cache key from URL
+   * @param url - The URL to generate a cache key for
+   * @returns The generated cache key
    */
   private _generateCacheKey(url: string): string {
     return Buffer.from(url).toString('base64').replace(/[^a-zA-Z0-9]/g, '');

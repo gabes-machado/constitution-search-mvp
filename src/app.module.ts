@@ -7,7 +7,6 @@ import { ConstitutionModule } from './constitution/constitution.module';
 import { TypesenseModule } from './typesense/typesense.module';
 import { HealthModule } from './health/health.module';
 import { CacheConfigModule } from './cache/cache.module';
-// import { JobsModule } from './jobs/jobs.module';
 import { AuthModule } from './auth/auth.module';
 
 @Module({
@@ -34,7 +33,6 @@ import { AuthModule } from './auth/auth.module';
       },
     ]),
     CacheConfigModule,
-    // JobsModule,
     AuthModule,
     TypesenseModule,
     ConstitutionModule,

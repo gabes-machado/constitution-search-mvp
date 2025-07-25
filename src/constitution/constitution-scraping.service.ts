@@ -98,6 +98,7 @@ export class ConstitutionScrapingService {
   /**
    * Fetches the HTML content of the Brazilian Constitution.
    * Handles character encoding specific to the source.
+   * @returns The HTML content as a string.
    */
   private async _fetchConstitutionHtml(): Promise<string> {
     this._logger.log(`Fetching HTML from ${this._constitutionUrl}`);
@@ -335,12 +336,12 @@ export class ConstitutionScrapingService {
           // it could be introductory text for that section.
           // Assign it based on the most specific parent context available.
           if (currentContext.subSection)
-            elementType = 'SUBSEÇÃO'; // CORRECTED CASE
+            elementType = 'SUBSEÇÃO';
           else if (currentContext.section)
-            elementType = 'SEÇÃO'; // CORRECTED CASE
+            elementType = 'SEÇÃO';
           else if (currentContext.chapter)
-            elementType = 'CAPÍTULO'; // CORRECTED CASE
-          else if (currentContext.title) elementType = 'TÍTULO'; // CORRECTED CASE
+            elementType = 'CAPÍTULO';
+          else if (currentContext.title) elementType = 'TÍTULO';
         }
       }
 
@@ -519,7 +520,7 @@ export class ConstitutionScrapingService {
             : undefined,
         sourceUrl: item.sourceUrl,
         lastIndexedAt: now,
-        tags: this._extractTags(item.text, item.hierarchicalContext), // Basic tag extraction
+        tags: this._extractTags(item.text, item.hierarchicalContext),
       };
       documents.push(doc);
     }
@@ -534,7 +535,7 @@ export class ConstitutionScrapingService {
     context: RawConstitutionDataItem['hierarchicalContext'],
   ): string[] {
     const tags: Set<string> = new Set();
-    if (context.title) tags.add(context.title.substring(0, 50)); // Add parts of titles/chapters as tags
+    if (context.title) tags.add(context.title.substring(0, 50));
     if (context.chapter) tags.add(context.chapter.substring(0, 50));
 
     // Example keyword-based tagging (very basic)
@@ -553,6 +554,7 @@ export class ConstitutionScrapingService {
 
   /**
    * Main public method to orchestrate the scraping and indexing process.
+   * @returns A promise that resolves when the process is complete.
    */
   public async processConstitution(): Promise<void> {
     this._logger.log('Starting full constitution processing...');

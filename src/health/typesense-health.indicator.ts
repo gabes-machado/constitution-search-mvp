@@ -10,7 +10,6 @@ export class TypesenseHealthIndicator extends HealthIndicator {
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     try {
-      // Try to get collection schema to test connection
       await this.typesenseService.getCollectionSchema('brazilian_constitution_v1');
       
       const result = this.getStatus(key, true, {
