@@ -3,7 +3,7 @@
 ## Description
 
 Constitution Search MVP is a NestJS application that scrapes the Brazilian Constitution and indexes it in a Typesense database.
-It's main use case is to provide a search interface for the Brazilian Constitution.
+Its main use case is to provide a search interface for the Brazilian Constitution.
 
 This MVP is a proof of concept for a larger project that will be used to search for constitutional articles and brazilian laws in general.
 
