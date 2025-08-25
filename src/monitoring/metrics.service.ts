@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { register, collectDefaultMetrics, Counter, Histogram, Gauge } from 'prom-client';
+import {
+  register,
+  collectDefaultMetrics,
+  Counter,
+  Histogram,
+  Gauge,
+} from 'prom-client';
 
 @Injectable()
 export class MetricsService {
@@ -49,32 +55,6 @@ export class MetricsService {
     help: 'Cache hit ratio (0-1)',
   });
 
-  // Job queue metrics
-  public readonly jobsTotal = new Counter({
-    name: 'jobs_total',
-    help: 'Total number of jobs processed',
-    labelNames: ['queue', 'status'],
-  });
-
-  public readonly jobsActive = new Gauge({
-    name: 'jobs_active',
-    help: 'Number of active jobs',
-    labelNames: ['queue'],
-  });
-
-  public readonly jobsWaiting = new Gauge({
-    name: 'jobs_waiting',
-    help: 'Number of waiting jobs',
-    labelNames: ['queue'],
-  });
-
-  public readonly jobDuration = new Histogram({
-    name: 'job_duration_seconds',
-    help: 'Duration of job processing in seconds',
-    labelNames: ['queue', 'job_type'],
-    buckets: [1, 5, 10, 30, 60, 120, 300, 600],
-  });
-
   // Typesense metrics
   public readonly typesenseOperationsTotal = new Counter({
     name: 'typesense_operations_total',
@@ -92,7 +72,7 @@ export class MetricsService {
   constructor() {
     // Collect default metrics (CPU, memory, etc.)
     collectDefaultMetrics({ register });
-    
+
     this.logger.log('Metrics service initialized');
   }
 
@@ -111,7 +91,12 @@ export class MetricsService {
    * @param statusCode - The status code of the response.
    * @param duration - The duration of the request in seconds.
    */
-  recordHttpRequest(method: string, route: string, statusCode: number, duration: number) {
+  recordHttpRequest(
+    method: string,
+    route: string,
+    statusCode: number,
+    duration: number,
+  ) {
     this.httpRequestsTotal.inc({ method, route, status_code: statusCode });
     this.httpRequestDuration.observe({ method, route }, duration);
   }
@@ -122,10 +107,14 @@ export class MetricsService {
    * @param duration - The duration of the scraping operation in seconds.
    * @param itemsProcessed - The number of items processed.
    */
-  recordConstitutionScraping(status: 'success' | 'failure', duration: number, itemsProcessed?: number) {
+  recordConstitutionScraping(
+    status: 'success' | 'failure',
+    duration: number,
+    itemsProcessed?: number,
+  ) {
     this.constitutionScrapingTotal.inc({ status });
     this.constitutionScrapingDuration.observe(duration);
-    
+
     if (itemsProcessed) {
       this.constitutionItemsProcessed.inc(itemsProcessed);
     }
@@ -136,7 +125,10 @@ export class MetricsService {
    * @param operation - The cache operation.
    * @param result - The result of the cache operation.
    */
-  recordCacheOperation(operation: 'get' | 'set' | 'delete', result: 'hit' | 'miss' | 'success' | 'error') {
+  recordCacheOperation(
+    operation: 'get' | 'set' | 'delete',
+    result: 'hit' | 'miss' | 'success' | 'error',
+  ) {
     this.cacheOperationsTotal.inc({ operation, result });
   }
 
@@ -149,38 +141,16 @@ export class MetricsService {
   }
 
   /**
-   * Record job metrics.
-   * @param queue - The job queue.
-   * @param status - The status of the job.
-   * @param duration - The duration of the job in seconds.
-   * @param jobType - The type of the job.
-   */
-  recordJob(queue: string, status: 'completed' | 'failed' | 'active', duration?: number, jobType?: string) {
-    this.jobsTotal.inc({ queue, status });
-    
-    if (duration && jobType) {
-      this.jobDuration.observe({ queue, job_type: jobType }, duration);
-    }
-  }
-
-  /**
-   * Update job queue metrics.
-   * @param queue - The job queue.
-   * @param active - The number of active jobs.
-   * @param waiting - The number of waiting jobs.
-   */
-  updateJobQueueMetrics(queue: string, active: number, waiting: number) {
-    this.jobsActive.set({ queue }, active);
-    this.jobsWaiting.set({ queue }, waiting);
-  }
-
-  /**
    * Record Typesense operation metrics.
    * @param operation - The Typesense operation.
    * @param status - The status of the operation.
    * @param duration - The duration of the operation in seconds.
    */
-  recordTypesenseOperation(operation: string, status: 'success' | 'error', duration: number) {
+  recordTypesenseOperation(
+    operation: string,
+    status: 'success' | 'error',
+    duration: number,
+  ) {
     this.typesenseOperationsTotal.inc({ operation, status });
     this.typesenseOperationDuration.observe({ operation }, duration);
   }

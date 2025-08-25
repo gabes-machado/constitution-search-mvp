@@ -102,17 +102,24 @@ export class RawConstitutionDataItem {
   @IsString()
   text: string;
 
-  @ApiProperty({ description: 'Hierarchical context information', type: HierarchicalContext })
+  @ApiProperty({
+    description: 'Hierarchical context information',
+    type: HierarchicalContext,
+  })
   @ValidateNested()
   @Type(() => HierarchicalContext)
   hierarchicalContext: HierarchicalContext;
 
-  @ApiPropertyOptional({ description: 'Additional attributes (e.g., href for links, ids)' })
+  @ApiPropertyOptional({
+    description: 'Additional attributes (e.g., href for links, ids)',
+  })
   @IsOptional()
   @IsObject()
   attributes?: { [key: string]: string };
 
-  @ApiPropertyOptional({ description: 'Original line number or position in source for debugging' })
+  @ApiPropertyOptional({
+    description: 'Original line number or position in source for debugging',
+  })
   @IsOptional()
   @IsNumber()
   lineNumber?: number;
@@ -127,7 +134,9 @@ export class RawConstitutionDataItem {
  * of the Constitution, prepared for indexing in Typesense.
  */
 export class ConstitutionIndexSchema {
-  @ApiProperty({ description: 'Unique ID for Typesense document (e.g., "const-art-5-inc-X")' })
+  @ApiProperty({
+    description: 'Unique ID for Typesense document (e.g., "const-art-5-inc-X")',
+  })
   @IsString()
   id: string;
 
@@ -173,12 +182,16 @@ export class ConstitutionIndexSchema {
     | 'ADCTArtigo'
     | 'EmendaConstitucional';
 
-  @ApiPropertyOptional({ description: 'Specific number (e.g., "5º", "I", "a)", "§ 1º", "1")' })
+  @ApiPropertyOptional({
+    description: 'Specific number (e.g., "5º", "I", "a)", "§ 1º", "1")',
+  })
   @IsOptional()
   @IsString()
   number?: string;
 
-  @ApiPropertyOptional({ description: 'Full reference like "Art. 5º, Inciso I, Alínea a"' })
+  @ApiPropertyOptional({
+    description: 'Full reference like "Art. 5º, Inciso I, Alínea a"',
+  })
   @IsOptional()
   @IsString()
   fullReference?: string;
@@ -187,21 +200,30 @@ export class ConstitutionIndexSchema {
   @IsString()
   text: string;
 
-  @ApiProperty({ description: 'Concatenated text of parent elements for contextual search' })
+  @ApiProperty({
+    description: 'Concatenated text of parent elements for contextual search',
+  })
   @IsString()
   hierarchicalTextContext: string;
 
-  @ApiPropertyOptional({ description: 'TÍTULO (e.g., "TÍTULO I - DOS PRINCÍPIOS FUNDAMENTAIS")' })
+  @ApiPropertyOptional({
+    description: 'TÍTULO (e.g., "TÍTULO I - DOS PRINCÍPIOS FUNDAMENTAIS")',
+  })
   @IsOptional()
   @IsString()
   parentTitle?: string;
 
-  @ApiPropertyOptional({ description: 'CAPÍTULO (e.g., "CAPÍTULO I - DOS DIREITOS E DEVERES INDIVIDUAIS E COLETIVOS")' })
+  @ApiPropertyOptional({
+    description:
+      'CAPÍTULO (e.g., "CAPÍTULO I - DOS DIREITOS E DEVERES INDIVIDUAIS E COLETIVOS")',
+  })
   @IsOptional()
   @IsString()
   parentChapter?: string;
 
-  @ApiPropertyOptional({ description: 'SEÇÃO (e.g., "SEÇÃO I - DO PODER LEGISLATIVO")' })
+  @ApiPropertyOptional({
+    description: 'SEÇÃO (e.g., "SEÇÃO I - DO PODER LEGISLATIVO")',
+  })
   @IsOptional()
   @IsString()
   parentSection?: string;
@@ -211,7 +233,10 @@ export class ConstitutionIndexSchema {
   @IsString()
   parentSubSection?: string;
 
-  @ApiPropertyOptional({ description: 'Article number if this is an inciso, alinea, or paragraph (e.g., "Art. 5º")' })
+  @ApiPropertyOptional({
+    description:
+      'Article number if this is an inciso, alinea, or paragraph (e.g., "Art. 5º")',
+  })
   @IsOptional()
   @IsString()
   parentArticleNumber?: string;
@@ -220,11 +245,16 @@ export class ConstitutionIndexSchema {
   @IsUrl()
   sourceUrl: string;
 
-  @ApiProperty({ description: 'Unix timestamp of when the document was last indexed' })
+  @ApiProperty({
+    description: 'Unix timestamp of when the document was last indexed',
+  })
   @IsNumber()
   lastIndexedAt: number;
 
-  @ApiPropertyOptional({ description: 'Tags (e.g., ["Direitos Fundamentais", "Remédios Constitucionais"])' })
+  @ApiPropertyOptional({
+    description:
+      'Tags (e.g., ["Direitos Fundamentais", "Remédios Constitucionais"])',
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

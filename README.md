@@ -56,7 +56,7 @@ Check out a few resources that may come in handy when working with NestJS:
 - Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
 - Visit the [Typesense Documentation](https://typesense.org/docs) to learn more about the Typesense search engine.
 - Visit the [Redis Documentation](https://redis.io/docs) to learn more about the Redis database.
-- Visit the [Bull Documentation](https://github.com/OptimalBits/bull) to learn more about the Bull queue.
+
 - Visit the [Cheerio Documentation](https://cheerio.js.org) to learn more about the Cheerio library.
 - Visit the [Passport Documentation](https://github.com/jaredhanson/passport) to learn more about the Passport library.
 - Visit the [JWT Documentation](https://github.com/auth0/node-jsonwebtoken) to learn more about the JWT library.

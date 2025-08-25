@@ -24,9 +24,15 @@ export class HealthController {
   @HealthCheck()
   check() {
     return this.healthCheckService.check([
-      () => this.memoryHealthIndicator.checkHeap('memory_heap', 150 * 1024 * 1024),
-      () => this.memoryHealthIndicator.checkRSS('memory_rss', 150 * 1024 * 1024),
-      () => this.diskHealthIndicator.checkStorage('storage', { path: '/', thresholdPercent: 0.9 }),
+      () =>
+        this.memoryHealthIndicator.checkHeap('memory_heap', 150 * 1024 * 1024),
+      () =>
+        this.memoryHealthIndicator.checkRSS('memory_rss', 150 * 1024 * 1024),
+      () =>
+        this.diskHealthIndicator.checkStorage('storage', {
+          path: '/',
+          thresholdPercent: 0.9,
+        }),
     ]);
   }
 
@@ -46,8 +52,10 @@ export class HealthController {
   @HealthCheck()
   checkMemory() {
     return this.healthCheckService.check([
-      () => this.memoryHealthIndicator.checkHeap('memory_heap', 200 * 1024 * 1024),
-      () => this.memoryHealthIndicator.checkRSS('memory_rss', 200 * 1024 * 1024),
+      () =>
+        this.memoryHealthIndicator.checkHeap('memory_heap', 200 * 1024 * 1024),
+      () =>
+        this.memoryHealthIndicator.checkRSS('memory_rss', 200 * 1024 * 1024),
     ]);
   }
 }

@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { HealthIndicator, HealthIndicatorResult, HealthCheckError } from '@nestjs/terminus';
+import {
+  HealthIndicator,
+  HealthIndicatorResult,
+  HealthCheckError,
+} from '@nestjs/terminus';
 import { TypesenseService } from '../typesense/typesense.service';
 
 @Injectable()
@@ -10,8 +14,10 @@ export class TypesenseHealthIndicator extends HealthIndicator {
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     try {
-      await this.typesenseService.getCollectionSchema('brazilian_constitution_v1');
-      
+      await this.typesenseService.getCollectionSchema(
+        'brazilian_constitution_v1',
+      );
+
       const result = this.getStatus(key, true, {
         message: 'Typesense connection is healthy',
       });

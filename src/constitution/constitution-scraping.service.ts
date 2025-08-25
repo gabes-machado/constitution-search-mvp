@@ -28,13 +28,16 @@ export class ConstitutionScrapingService {
   ) {
     this._constitutionUrl = this._configService.get<string>(
       'CONSTITUTION_URL',
-      'https://www.planalto.gov.br/ccivil_03/constituicao/ConstituicaoCompilado.htm'
+      'https://www.planalto.gov.br/ccivil_03/constituicao/ConstituicaoCompilado.htm',
     );
     this._collectionName = this._configService.get<string>(
       'CONSTITUTION_COLLECTION_NAME',
-      'brazilian_constitution_v1'
+      'brazilian_constitution_v1',
     );
-    this._batchSize = this._configService.get<number>('INDEXING_BATCH_SIZE', 200);
+    this._batchSize = this._configService.get<number>(
+      'INDEXING_BATCH_SIZE',
+      200,
+    );
   }
 
   /**
@@ -46,7 +49,13 @@ export class ConstitutionScrapingService {
       fields: [
         { name: 'id', type: 'string' },
         { name: 'type', type: 'string', facet: true },
-        { name: 'number', type: 'string', optional: true, facet: true, sort: true },
+        {
+          name: 'number',
+          type: 'string',
+          optional: true,
+          facet: true,
+          sort: true,
+        },
         {
           name: 'fullReference',
           type: 'string',
@@ -63,7 +72,12 @@ export class ConstitutionScrapingService {
         { name: 'parentTitle', type: 'string', optional: true, facet: true },
         { name: 'parentChapter', type: 'string', optional: true, facet: true },
         { name: 'parentSection', type: 'string', optional: true, facet: true },
-        { name: 'parentSubSection', type: 'string', optional: true, facet: true },
+        {
+          name: 'parentSubSection',
+          type: 'string',
+          optional: true,
+          facet: true,
+        },
         {
           name: 'parentArticleNumber',
           type: 'string',
@@ -102,14 +116,16 @@ export class ConstitutionScrapingService {
    */
   private async _fetchConstitutionHtml(): Promise<string> {
     this._logger.log(`Fetching HTML from ${this._constitutionUrl}`);
-    
+
     // Try to get from cache first
-    const cachedHtml = await this._cacheService.getHtmlContent(this._constitutionUrl);
+    const cachedHtml = await this._cacheService.getHtmlContent(
+      this._constitutionUrl,
+    );
     if (cachedHtml) {
       this._logger.log('Using cached HTML content');
       return cachedHtml;
     }
-    
+
     try {
       this._logger.log('Fetching fresh HTML from external source');
       const response = await firstValueFrom(
@@ -121,13 +137,17 @@ export class ConstitutionScrapingService {
           timeout: 30000, // 30 second timeout
         }),
       );
-      
+
       const htmlContent = response.data;
       this._logger.log('Successfully fetched HTML from external source');
-      
+
       // Cache the HTML content for future use (24 hours TTL)
-      await this._cacheService.setHtmlContent(this._constitutionUrl, htmlContent, 24 * 60 * 60);
-      
+      await this._cacheService.setHtmlContent(
+        this._constitutionUrl,
+        htmlContent,
+        24 * 60 * 60,
+      );
+
       return htmlContent;
     } catch (error: any) {
       this._logger.error(
@@ -335,12 +355,9 @@ export class ConstitutionScrapingService {
           // If we are inside a Title/Chapter/Section/SubSection but not an Article yet,
           // it could be introductory text for that section.
           // Assign it based on the most specific parent context available.
-          if (currentContext.subSection)
-            elementType = 'SUBSEÇÃO';
-          else if (currentContext.section)
-            elementType = 'SEÇÃO';
-          else if (currentContext.chapter)
-            elementType = 'CAPÍTULO';
+          if (currentContext.subSection) elementType = 'SUBSEÇÃO';
+          else if (currentContext.section) elementType = 'SEÇÃO';
+          else if (currentContext.chapter) elementType = 'CAPÍTULO';
           else if (currentContext.title) elementType = 'TÍTULO';
         }
       }
