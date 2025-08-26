@@ -13,7 +13,7 @@ export class JobsService {
   private readonly _logger = new Logger(JobsService.name);
 
   constructor(
-    @InjectQueue('scraping') private readonly _scrapingQueue: Queue
+    @InjectQueue('scraping') private readonly _scrapingQueue: Queue,
   ) {}
 
   /**
@@ -23,7 +23,7 @@ export class JobsService {
    */
   async addScrapingJob(data: ScrapingJobData): Promise<Job> {
     this._logger.log('Adding new scraping job to queue');
-    
+
     const jobData: ScrapingJobData = {
       ...data,
       timestamp: new Date(),

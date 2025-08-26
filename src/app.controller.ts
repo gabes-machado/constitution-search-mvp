@@ -93,6 +93,38 @@ export class AppController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @Get('queue-status')
+  @ApiOperation({
+    summary: 'Get the status of the job queue.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Queue status retrieved successfully.',
+    schema: {
+      example: {
+        waiting: 0,
+        active: 1,
+        completed: 5,
+        failed: 0,
+        delayed: 0,
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admin role required' })
+  async getQueueStatus(): Promise<{
+    waiting: number;
+    active: number;
+    completed: number;
+    failed: number;
+    delayed: number;
+  }> {
+    this._logger.log('GET /constitution/queue-status endpoint hit.');
+    return this._jobsService.getQueueStats();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Post('test-parse')
   @HttpCode(HttpStatus.OK)
   @Throttle({ medium: { limit: 5, ttl: 600000 } }) // 5 requests per 10 minutes for testing

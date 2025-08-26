@@ -23,7 +23,10 @@ import { ConstitutionModule } from '../constitution/constitution.module';
             type: 'exponential',
             delay: configService.get<number>('JOB_BACKOFF_DELAY', 5000),
           },
-          removeOnComplete: configService.get<number>('JOB_REMOVE_ON_COMPLETE', 10),
+          removeOnComplete: configService.get<number>(
+            'JOB_REMOVE_ON_COMPLETE',
+            10,
+          ),
           removeOnFail: configService.get<number>('JOB_REMOVE_ON_FAIL', 5),
         },
       }),

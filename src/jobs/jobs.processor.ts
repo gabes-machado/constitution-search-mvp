@@ -9,7 +9,7 @@ export class JobsProcessor {
   private readonly _logger = new Logger(JobsProcessor.name);
 
   constructor(
-    private readonly _constitutionScrapingService: ConstitutionScrapingService
+    private readonly _constitutionScrapingService: ConstitutionScrapingService,
   ) {}
 
   @Process('process-constitution')
@@ -17,7 +17,10 @@ export class JobsProcessor {
     const { data } = job;
     const jobId = job.id;
 
-    this._logger.log(`Starting scraping job ${jobId} with data:`, JSON.stringify(data));
+    this._logger.log(
+      `Starting scraping job ${jobId} with data:`,
+      JSON.stringify(data),
+    );
 
     try {
       // Update job progress
@@ -33,9 +36,9 @@ export class JobsProcessor {
     } catch (error: any) {
       this._logger.error(
         `Scraping job ${jobId} failed: ${error.message}`,
-        error.stack
+        error.stack,
       );
-      
+
       // Re-throw the error so Bull can handle retry logic
       throw error;
     }
