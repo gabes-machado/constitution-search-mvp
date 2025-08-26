@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { register, collectDefaultMetrics, Counter, Histogram, Gauge } from 'prom-client';
+import {
+  register,
+  collectDefaultMetrics,
+  Counter,
+  Histogram,
+  Gauge,
+} from 'prom-client';
 
 @Injectable()
 export class MetricsService {
@@ -92,7 +98,7 @@ export class MetricsService {
   constructor() {
     // Collect default metrics (CPU, memory, etc.)
     collectDefaultMetrics({ register });
-    
+
     this.logger.log('Metrics service initialized');
   }
 
@@ -111,7 +117,12 @@ export class MetricsService {
    * @param statusCode - The status code of the response.
    * @param duration - The duration of the request in seconds.
    */
-  recordHttpRequest(method: string, route: string, statusCode: number, duration: number) {
+  recordHttpRequest(
+    method: string,
+    route: string,
+    statusCode: number,
+    duration: number,
+  ) {
     this.httpRequestsTotal.inc({ method, route, status_code: statusCode });
     this.httpRequestDuration.observe({ method, route }, duration);
   }
@@ -122,10 +133,14 @@ export class MetricsService {
    * @param duration - The duration of the scraping operation in seconds.
    * @param itemsProcessed - The number of items processed.
    */
-  recordConstitutionScraping(status: 'success' | 'failure', duration: number, itemsProcessed?: number) {
+  recordConstitutionScraping(
+    status: 'success' | 'failure',
+    duration: number,
+    itemsProcessed?: number,
+  ) {
     this.constitutionScrapingTotal.inc({ status });
     this.constitutionScrapingDuration.observe(duration);
-    
+
     if (itemsProcessed) {
       this.constitutionItemsProcessed.inc(itemsProcessed);
     }
@@ -136,7 +151,10 @@ export class MetricsService {
    * @param operation - The cache operation.
    * @param result - The result of the cache operation.
    */
-  recordCacheOperation(operation: 'get' | 'set' | 'delete', result: 'hit' | 'miss' | 'success' | 'error') {
+  recordCacheOperation(
+    operation: 'get' | 'set' | 'delete',
+    result: 'hit' | 'miss' | 'success' | 'error',
+  ) {
     this.cacheOperationsTotal.inc({ operation, result });
   }
 
@@ -155,9 +173,14 @@ export class MetricsService {
    * @param duration - The duration of the job in seconds.
    * @param jobType - The type of the job.
    */
-  recordJob(queue: string, status: 'completed' | 'failed' | 'active', duration?: number, jobType?: string) {
+  recordJob(
+    queue: string,
+    status: 'completed' | 'failed' | 'active',
+    duration?: number,
+    jobType?: string,
+  ) {
     this.jobsTotal.inc({ queue, status });
-    
+
     if (duration && jobType) {
       this.jobDuration.observe({ queue, job_type: jobType }, duration);
     }
@@ -180,7 +203,11 @@ export class MetricsService {
    * @param status - The status of the operation.
    * @param duration - The duration of the operation in seconds.
    */
-  recordTypesenseOperation(operation: string, status: 'success' | 'error', duration: number) {
+  recordTypesenseOperation(
+    operation: string,
+    status: 'success' | 'error',
+    duration: number,
+  ) {
     this.typesenseOperationsTotal.inc({ operation, status });
     this.typesenseOperationDuration.observe({ operation }, duration);
   }

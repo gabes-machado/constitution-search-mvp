@@ -36,7 +36,7 @@ export interface AuthResponse {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  
+
   // In-memory user store for MVP (replace with database in production)
   private readonly users: Map<string, User & { password: string }> = new Map();
 
@@ -91,7 +91,7 @@ export class AuthService {
    */
   async validateUser(username: string, password: string): Promise<User | null> {
     const user = this.users.get(username);
-    
+
     if (!user || !user.isActive) {
       return null;
     }
@@ -144,7 +144,7 @@ export class AuthService {
    */
   async validateToken(payload: JwtPayload): Promise<User | null> {
     const user = this.users.get(payload.username);
-    
+
     if (!user || !user.isActive) {
       return null;
     }
@@ -216,11 +216,14 @@ export class AuthService {
   /**
    * Update user (admin only)
    */
-  async updateUser(username: string, updates: Partial<{
-    email: string;
-    role: 'admin' | 'user';
-    isActive: boolean;
-  }>): Promise<User | null> {
+  async updateUser(
+    username: string,
+    updates: Partial<{
+      email: string;
+      role: 'admin' | 'user';
+      isActive: boolean;
+    }>,
+  ): Promise<User | null> {
     const user = this.users.get(username);
     if (!user) {
       return null;
@@ -238,7 +241,11 @@ export class AuthService {
   /**
    * Change user password
    */
-  async changePassword(username: string, oldPassword: string, newPassword: string): Promise<boolean> {
+  async changePassword(
+    username: string,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<boolean> {
     const user = this.users.get(username);
     if (!user) {
       return false;
@@ -272,7 +279,9 @@ export class AuthService {
   /**
    * Refresh JWT token
    */
-  async refreshToken(user: User): Promise<{ access_token: string; expiresIn: number }> {
+  async refreshToken(
+    user: User,
+  ): Promise<{ access_token: string; expiresIn: number }> {
     const payload: JwtPayload = {
       sub: user.id,
       username: user.username,

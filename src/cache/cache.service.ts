@@ -17,12 +17,12 @@ export class CacheService {
     try {
       const cacheKey = `html_content:${this._generateCacheKey(url)}`;
       const cachedContent = await this._cacheManager.get<string>(cacheKey);
-      
+
       if (cachedContent) {
         this._logger.log(`Cache HIT for URL: ${url}`);
         return cachedContent;
       }
-      
+
       this._logger.log(`Cache MISS for URL: ${url}`);
       return null;
     } catch (error: any) {
@@ -37,7 +37,11 @@ export class CacheService {
    * @param content - The HTML content to cache
    * @param ttl - The time-to-live for the cache entry (in seconds)
    */
-  async setHtmlContent(url: string, content: string, ttl?: number): Promise<void> {
+  async setHtmlContent(
+    url: string,
+    content: string,
+    ttl?: number,
+  ): Promise<void> {
     try {
       const cacheKey = `html_content:${this._generateCacheKey(url)}`;
       await this._cacheManager.set(cacheKey, content, ttl);
@@ -56,16 +60,18 @@ export class CacheService {
     try {
       const cacheKey = `parsed_data:${this._generateCacheKey(url)}`;
       const cachedData = await this._cacheManager.get<any[]>(cacheKey);
-      
+
       if (cachedData) {
         this._logger.log(`Cache HIT for parsed data: ${url}`);
         return cachedData;
       }
-      
+
       this._logger.log(`Cache MISS for parsed data: ${url}`);
       return null;
     } catch (error: any) {
-      this._logger.error(`Cache get error for parsed data ${url}: ${error.message}`);
+      this._logger.error(
+        `Cache get error for parsed data ${url}: ${error.message}`,
+      );
       return null;
     }
   }
@@ -82,7 +88,9 @@ export class CacheService {
       await this._cacheManager.set(cacheKey, data, ttl);
       this._logger.log(`Cached parsed data for URL: ${url}`);
     } catch (error: any) {
-      this._logger.error(`Cache set error for parsed data ${url}: ${error.message}`);
+      this._logger.error(
+        `Cache set error for parsed data ${url}: ${error.message}`,
+      );
     }
   }
 
@@ -94,10 +102,10 @@ export class CacheService {
     try {
       const htmlCacheKey = `html_content:${this._generateCacheKey(url)}`;
       const parsedCacheKey = `parsed_data:${this._generateCacheKey(url)}`;
-      
+
       await this._cacheManager.del(htmlCacheKey);
       await this._cacheManager.del(parsedCacheKey);
-      
+
       this._logger.log(`Cleared cache for URL: ${url}`);
     } catch (error: any) {
       this._logger.error(`Cache clear error for URL ${url}: ${error.message}`);
@@ -109,7 +117,9 @@ export class CacheService {
    */
   async clearAllCache(): Promise<void> {
     try {
-      this._logger.log('Cache clear all requested - implement pattern-based deletion if needed');
+      this._logger.log(
+        'Cache clear all requested - implement pattern-based deletion if needed',
+      );
     } catch (error: any) {
       this._logger.error(`Cache clear all error: ${error.message}`);
     }
@@ -121,6 +131,8 @@ export class CacheService {
    * @returns The generated cache key
    */
   private _generateCacheKey(url: string): string {
-    return Buffer.from(url).toString('base64').replace(/[^a-zA-Z0-9]/g, '');
+    return Buffer.from(url)
+      .toString('base64')
+      .replace(/[^a-zA-Z0-9]/g, '');
   }
 }

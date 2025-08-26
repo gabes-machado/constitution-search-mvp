@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { BullModule } from '@nestjs/bull';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConstitutionModule } from './constitution/constitution.module';
@@ -8,12 +9,25 @@ import { TypesenseModule } from './typesense/typesense.module';
 import { HealthModule } from './health/health.module';
 import { CacheConfigModule } from './cache/cache.module';
 import { AuthModule } from './auth/auth.module';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('REDIS_QUEUE_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_QUEUE_PORT', 6379),
+          password: configService.get<string>('REDIS_QUEUE_PASSWORD'),
+          db: configService.get<number>('REDIS_QUEUE_DB', 1),
+        },
+      }),
+      inject: [ConfigService],
     }),
     ThrottlerModule.forRoot([
       {
@@ -37,6 +51,7 @@ import { AuthModule } from './auth/auth.module';
     TypesenseModule,
     ConstitutionModule,
     HealthModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

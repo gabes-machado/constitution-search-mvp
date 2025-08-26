@@ -37,24 +37,35 @@ export class StreamingHtmlParserService {
       onItem,
     } = options;
 
-    this.logger.log(`Starting streaming HTML parsing with chunk size ${chunkSize}`);
+    this.logger.log(
+      `Starting streaming HTML parsing with chunk size ${chunkSize}`,
+    );
 
     const results: RawConstitutionDataItem[] = [];
     let processedBytes = 0;
-    let currentContext: Partial<RawConstitutionDataItem['hierarchicalContext']> = {};
+    let currentContext: Partial<
+      RawConstitutionDataItem['hierarchicalContext']
+    > = {};
     let lineNumber = 0;
 
     try {
       // Create a readable stream from the HTML content
-      const htmlStream = Readable.from(this.createHtmlChunks(htmlContent, chunkSize));
+      const htmlStream = Readable.from(
+        this.createHtmlChunks(htmlContent, chunkSize),
+      );
 
       // Create a transform stream for processing chunks
       const parseTransform = new Transform({
         objectMode: true,
         transform: (chunk: string, encoding, callback) => {
           try {
-            const items = this.parseHtmlChunk(chunk, sourceUrl, currentContext, lineNumber);
-            
+            const items = this.parseHtmlChunk(
+              chunk,
+              sourceUrl,
+              currentContext,
+              lineNumber,
+            );
+
             // Update context and line number for next chunk
             if (items.length > 0) {
               const lastItem = items[items.length - 1];
@@ -71,15 +82,20 @@ export class StreamingHtmlParserService {
             }
 
             processedBytes += Buffer.byteLength(chunk, 'utf8');
-            
+
             if (onProgress) {
-              onProgress(processedBytes, Buffer.byteLength(htmlContent, 'utf8'));
+              onProgress(
+                processedBytes,
+                Buffer.byteLength(htmlContent, 'utf8'),
+              );
             }
 
             // Check memory usage
             const memoryUsage = process.memoryUsage();
             if (memoryUsage.heapUsed > maxMemoryUsage) {
-              this.logger.warn(`Memory usage (${memoryUsage.heapUsed}) exceeds limit (${maxMemoryUsage})`);
+              this.logger.warn(
+                `Memory usage (${memoryUsage.heapUsed}) exceeds limit (${maxMemoryUsage})`,
+              );
               // Could implement memory pressure handling here
             }
 
@@ -93,11 +109,15 @@ export class StreamingHtmlParserService {
       // Process the stream
       await pipeline(htmlStream, parseTransform);
 
-      this.logger.log(`Streaming HTML parsing completed. Processed ${results.length} items`);
+      this.logger.log(
+        `Streaming HTML parsing completed. Processed ${results.length} items`,
+      );
       return results;
-
     } catch (error: any) {
-      this.logger.error(`Error in streaming HTML parsing: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error in streaming HTML parsing: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -108,7 +128,10 @@ export class StreamingHtmlParserService {
    * @param chunkSize - The size of each chunk.
    * @returns A generator that yields chunks of HTML content.
    */
-  private *createHtmlChunks(htmlContent: string, chunkSize: number): Generator<string> {
+  private *createHtmlChunks(
+    htmlContent: string,
+    chunkSize: number,
+  ): Generator<string> {
     let position = 0;
     let buffer = '';
 
@@ -151,7 +174,7 @@ export class StreamingHtmlParserService {
 
     try {
       // Load the chunk with cheerio
-      const $ = cheerio.load(htmlChunk, { 
+      const $ = cheerio.load(htmlChunk, {
         xmlMode: false,
         decodeEntities: true,
         normalizeWhitespace: true,
@@ -162,7 +185,8 @@ export class StreamingHtmlParserService {
       // Process each element in the chunk
       $('*').each((index, element) => {
         const $element = $(element);
-        const tagName = element.type === 'tag' ? element.name?.toLowerCase() : undefined;
+        const tagName =
+          element.type === 'tag' ? element.name?.toLowerCase() : undefined;
         const text = $element.text().trim();
 
         if (!text || text.length < 10) {
@@ -190,7 +214,6 @@ export class StreamingHtmlParserService {
 
         items.push(item);
       });
-
     } catch (error: any) {
       this.logger.error(`Error parsing HTML chunk: ${error.message}`);
       // Don't throw - continue processing other chunks
@@ -205,7 +228,10 @@ export class StreamingHtmlParserService {
    * @param tagName - The tag name of the element.
    * @returns The type of constitutional element, or null if not found.
    */
-  private detectElementType(text: string, tagName?: string): RawConstitutionDataItem['elementType'] | null {
+  private detectElementType(
+    text: string,
+    tagName?: string,
+  ): RawConstitutionDataItem['elementType'] | null {
     // Title patterns
     if (text.match(/^TÍTULO\s+[IVX]+/i)) {
       return 'TÍTULO';

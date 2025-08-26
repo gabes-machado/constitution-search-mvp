@@ -17,12 +17,16 @@ import * as winston from 'winston';
               winston.format.timestamp(),
               winston.format.errors({ stack: true }),
               winston.format.colorize({ all: true }),
-              winston.format.printf(({ timestamp, level, message, context, trace, ...meta }) => {
-                const contextStr = context ? `[${context}] ` : '';
-                const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
-                const traceStr = trace ? `\n${trace}` : '';
-                return `${timestamp} ${level}: ${contextStr}${message}${metaStr}${traceStr}`;
-              }),
+              winston.format.printf(
+                ({ timestamp, level, message, context, trace, ...meta }) => {
+                  const contextStr = context ? `[${context}] ` : '';
+                  const metaStr = Object.keys(meta).length
+                    ? ` ${JSON.stringify(meta)}`
+                    : '';
+                  const traceStr = trace ? `\n${trace}` : '';
+                  return `${timestamp} ${level}: ${contextStr}${message}${metaStr}${traceStr}`;
+                },
+              ),
             ),
           }),
         ];

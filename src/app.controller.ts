@@ -5,18 +5,23 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
-  Param,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { Public } from './auth/decorators/public.decorator';
 import { Roles } from './auth/decorators/roles.decorator';
 import { AppService } from './app.service';
 import { RawConstitutionDataItem } from './constitution/dto/constitution-data.dto';
+import { JobsService } from './jobs/jobs.service';
 
 @ApiTags('constitution')
 @Controller('constitution')
@@ -25,12 +30,17 @@ export class AppController {
 
   constructor(
     private readonly _appService: AppService,
+    private readonly _jobsService: JobsService,
   ) {}
 
   @Public()
   @Get('hello')
   @ApiOperation({ summary: 'Get a simple hello message from the API.' })
-  @ApiResponse({ status: 200, description: 'Returns a hello string.', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a hello string.',
+    type: String,
+  })
   getHello(): string {
     return this._appService.getHello();
   }
@@ -44,21 +54,73 @@ export class AppController {
   @ApiOperation({
     summary: 'Trigger the scraping and indexing of the Brazilian Constitution.',
   })
-  @ApiResponse({ status: 202, description: 'Scraping process initiated. Check server logs for details.' })
+  @ApiResponse({
+    status: 202,
+    description: 'Scraping job added to queue successfully.',
+    schema: {
+      example: {
+        message: 'Scraping job added to queue successfully',
+        status: 'queued',
+        jobId: '1',
+      },
+    },
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - admin role required' })
   @ApiResponse({ status: 429, description: 'Too many requests' })
   async triggerScraping(
     @Query('priority') priority?: number,
     @Query('forceRefresh') forceRefresh?: boolean,
-  ): Promise<{ message: string; status: string }> {
+  ): Promise<{ message: string; status: string; jobId?: string }> {
     this._logger.log('POST /constitution/scrape-and-index endpoint hit.');
-    
-    // Temporarily disabled - JobsService not available due to circular dependency
-    return {
-      message: 'Job processing temporarily disabled - testing core features',
-      status: 'disabled',
-    };
+
+    try {
+      const job = await this._jobsService.addScrapingJob({
+        priority,
+        forceRefresh,
+      });
+
+      return {
+        message: 'Scraping job added to queue successfully',
+        status: 'queued',
+        jobId: job.id?.toString(),
+      };
+    } catch (error: any) {
+      this._logger.error('Failed to add scraping job to queue', error.stack);
+      throw new Error(`Failed to queue scraping job: ${error.message}`);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Get('queue-status')
+  @ApiOperation({
+    summary: 'Get the status of the job queue.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Queue status retrieved successfully.',
+    schema: {
+      example: {
+        waiting: 0,
+        active: 1,
+        completed: 5,
+        failed: 0,
+        delayed: 0,
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admin role required' })
+  async getQueueStatus(): Promise<{
+    waiting: number;
+    active: number;
+    completed: number;
+    failed: number;
+    delayed: number;
+  }> {
+    this._logger.log('GET /constitution/queue-status endpoint hit.');
+    return this._jobsService.getQueueStats();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

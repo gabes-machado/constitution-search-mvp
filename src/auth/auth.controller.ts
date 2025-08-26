@@ -10,7 +10,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService, LoginDto, AuthResponse, User } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
@@ -46,7 +51,9 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Refresh JWT token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
-  async refreshToken(@Request() req: { user: User }): Promise<{ access_token: string; expiresIn: number }> {
+  async refreshToken(
+    @Request() req: { user: User },
+  ): Promise<{ access_token: string; expiresIn: number }> {
     return this.authService.refreshToken(req.user);
   }
 
@@ -86,12 +93,15 @@ export class AuthController {
   @ApiOperation({ summary: 'Create new user (admin only)' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden - admin role required' })
-  async createUser(@Body() userData: {
-    username: string;
-    email: string;
-    password: string;
-    role: 'admin' | 'user';
-  }): Promise<User> {
+  async createUser(
+    @Body()
+    userData: {
+      username: string;
+      email: string;
+      password: string;
+      role: 'admin' | 'user';
+    },
+  ): Promise<User> {
     return this.authService.createUser(userData);
   }
 
@@ -105,7 +115,8 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'User not found' })
   async updateUser(
     @Param('username') username: string,
-    @Body() updates: Partial<{
+    @Body()
+    updates: Partial<{
       email: string;
       role: 'admin' | 'user';
       isActive: boolean;
